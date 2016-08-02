@@ -1,0 +1,32 @@
+@(registerForm: Form[UserRegisterData])(loginForm: Form[UserFormData])(implicit messages: Messages)
+
+@import helper._
+
+<div class="register">
+
+<h1>Register</h1>
+@form(action = routes.BaseController.register) {
+
+    @inputText(registerForm("username"))
+
+    @inputPassword(registerForm("password"))
+    @checkbox(registerForm("isadmin"))
+    @inputText(registerForm("groupid"))
+
+    <input type="submit" value="register" />
+
+}
+</div>
+
+    <div class="login">
+        <h1>login</h1>
+    @form(action = routes.BaseController.login) {
+
+        @helper.inputText(loginForm("username"))
+
+        @helper.inputPassword(loginForm("password"))
+
+        <input type="submit" value="login" />
+
+    }
+    </div>

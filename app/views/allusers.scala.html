@@ -1,0 +1,16 @@
+@(users: Seq[model.User])
+
+<table>
+    <thead>
+        <td>username</td>
+        <td>pass</td>
+        <td>isadmin</td>
+        <td>groupid</td>
+    </thead>
+    <tbody>
+        @users.map { user =>
+            <tr> <td>@user.username</td> <td>@user.password</td> <td>@user.admin</td> <td>@user.groupId</td></tr>
+        }
+    </tbody>
+</table>
+
