@@ -63,9 +63,10 @@ class BaseController @Inject()(val messagesApi: MessagesApi, userDao: UserDAO) e
 
         val dbUser = Await.result(userDao.getUserByUsername(user.username), Duration.Inf)
 
-        if (loginUser(user, dbUser))
+        /* if (loginUser(user, dbUser))
           Redirect("/user").withSession("connected" -> dbUser.username)
-        else BadRequest("login failed")
+        else BadRequest("login failed") */
+        Ok("not implemented")
       }
     )
   }

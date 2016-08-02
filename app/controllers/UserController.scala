@@ -62,12 +62,16 @@ class UserController @Inject()(val messagesApi: MessagesApi, userDao: UserDAO) e
   def userPage = Action { request =>
     val username = request.session.get("connected").headOption
 
-    if (username.isDefined) {
+    /* if (username.isDefined) {
       val user = Await.result(userDao.getUserByUsername(username.get), 3.seconds)
       Ok(views.html.user.base(user, allGroups)(addEventform))
     } else {
       BadRequest(views.html.error("go log in bitch"))
-    }
+    } */
+
+    Ok("not implemented")
+
+
 
   }
 
@@ -77,13 +81,14 @@ class UserController @Inject()(val messagesApi: MessagesApi, userDao: UserDAO) e
       formErrors => {
         val username = request.session.get("connected").headOption
 
-        username match {
+        /* username match {
           case None => Ok("wat")
           case Some(username) => {
             val user = Await.result(userDao.getUserByUsername(username), 3.seconds)
             Ok(views.html.user.base(user, allGroups)(formErrors))
           }
-        }
+        } */
+        Ok("not implemented")
       },
       data => {
 
@@ -102,7 +107,7 @@ class UserController @Inject()(val messagesApi: MessagesApi, userDao: UserDAO) e
 
     val username = request.session.get("connected").headOption
 
-    username match {
+    /* username match {
       case Some(username) => {
         val user = Await.result(userDao.getUserByUsername(username), 3.seconds)
         val newUser = User(user.id, user.username, user.password, user.admin, Some(groupId.toInt))
@@ -111,7 +116,9 @@ class UserController @Inject()(val messagesApi: MessagesApi, userDao: UserDAO) e
           long => Redirect("/user")
         }
       }
-    }
+    } */
+
+    Future(Ok("not implemented"))
 
   }
 

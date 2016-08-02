@@ -22,8 +22,7 @@ import scala.concurrent.{ExecutionContext, Future}
  * each response.
  */
 @Singleton
-class Filters @Inject() (
-                          env: Environment,
+class Filters @Inject() (env: Environment,
                           exampleFilter: ExampleFilter, accessControll: AccessControll) extends HttpFilters {
 
   override val filters = {

@@ -57,12 +57,45 @@ class UserRestController @Inject()(userDao: UserDAO) extends Controller {
     }
   }
 
-  def allUsers = Action.async {
-    /* val jsonUsers = Await.result(userDao.allUsers, 3.seconds).map {
-      user => JsonUser(Some(user.id.toInt), user.username, user.password, user.admin, user.groupId)
-    }
+  def login = Action.async(BodyParsers.parse.json) { request =>
+    val userResult = request.body.validate[JsonUser]
 
-    val  asJson = Json.toJson(jsonUsers) */
+    userResult.fold(
+      errors => {
+        Future(BadRequest(Json.obj("status" -> "KO", "message" -> JsError.toJson(errors))))
+      },
+      user => {
+        val temp = User(0, user.username, user.password)
+
+        userDao.getUserByUsername(temp.username).map {
+
+          userOption => {
+            if (userOption.isDefined) {
+              loginUser(temp, userOption.get) match {
+                case false => {
+                  BadRequest(Json.obj("status" -> "KO", "message" -> ("login failed")))
+                }
+                case true => {
+                  Ok
+                }
+
+              }
+            } else {
+              BadRequest(Json.obj("status" -> "KO", "message" -> ("login failed")))
+            }
+
+          }
+        }
+      }
+    )
+
+  }
+
+  private def loginUser(user: User, dbUser: User): Boolean = {
+    dbUser.username == user.username && dbUser.password == user.password
+  }
+
+  def allUsers = Action.async {
 
     userDao.allUsers.map {
       user => {
@@ -73,8 +106,6 @@ class UserRestController @Inject()(userDao: UserDAO) extends Controller {
         Ok(asJsonData)
       }
     }
-
-    // Ok(asJson).withHeaders("Content-Type" -> "application/json; charset=utf-8")
   }
 
   def register() = Action.async(BodyParsers.parse.json) { request =>

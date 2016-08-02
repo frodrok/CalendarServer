@@ -161,13 +161,13 @@ class UserDAO @Inject()(@NamedDatabase("msql") val dbConfigProvider: DatabaseCon
     db.run(userByGroupName.result)
   }
 
-  def getUserByUsername(retrievedUsername: String): Future[User] = {
+  def getUserByUsername(retrievedUsername: String): Future[Option[User]] = {
     val q = for {
       q <- Users if q.username === retrievedUsername
     } yield (q)
 
     db.run(q.result).map {
-      seq => seq.head
+      seq => seq.headOption
     }
   }
 
