@@ -9,8 +9,8 @@ import slick.driver.JdbcProfile
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Await, Future}
-
 import scala.concurrent.duration._
+import scala.util.Try
 
 
 
@@ -20,13 +20,13 @@ class EventDAO @Inject()(@NamedDatabase("msql") val dbConfigProvider: DatabaseCo
 
   private val Events = TableQuery[EventsTable]
 
-  def addEvent(event: Event): Future[Option[Int]] = {
+  def addEvent(event: Event): Future[Try[Int]] = {
     db.run(
       (Events returning Events.map(_.id)) += event
     )
   }
 
-  def updateEvent(retrievedEvent: Event): Future[Option[Int]] = db.run {
+  def updateEvent(retrievedEvent: Event): Future[Try[Int]] = db.run {
     Events.filter(_.id === retrievedEvent.id).update(retrievedEvent).map {
       case 0 => None
       case _ => retrievedEvent.id
