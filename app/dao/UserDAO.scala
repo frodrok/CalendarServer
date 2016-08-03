@@ -1,26 +1,17 @@
 package dao
 
-import play.api.Logger
 import javax.inject.Inject
 
-import model.{Event, Group, User}
-import model.{UserHasNoGroupException, UserNotFoundException}
-import play.api.Play
+import model._
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import play.db.NamedDatabase
 import slick.driver.JdbcProfile
-import slick.driver.H2Driver.api._
-import slick.jdbc.meta.MTable
+import slick.driver.MySQLDriver.api._
 
-import scala.concurrent.duration.Duration
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
-import scala.concurrent.ExecutionContext.Implicits.global
-import play.api.Logger
-
-import scala.util.{Failure, Success, Try}
-
-
+import scala.util.Try
 
 class UserDAO @Inject()(@NamedDatabase("msql") val dbConfigProvider: DatabaseConfigProvider) extends HasDatabaseConfigProvider[JdbcProfile] {
 
@@ -36,12 +27,13 @@ class UserDAO @Inject()(@NamedDatabase("msql") val dbConfigProvider: DatabaseCon
     schema.create
   )).onFailure { case ex => Logger.error(ex.getMessage)} */
 
-  def setup: Unit = {
+  def setup() {
     /* db.run(DBIO.seq(
       Events.schema.drop,
       Groups.schema.drop,
       Events.schema.drop
-    )).onFailure{ case ex => println(ex) } */
+    )).onFailure{ case ex => println(ex) }
+    droppa manuellt istället */
 
     db.run(DBIO.seq(
       Groups.schema.create,
@@ -52,48 +44,12 @@ class UserDAO @Inject()(@NamedDatabase("msql") val dbConfigProvider: DatabaseCon
 
   }
 
-  def addEvent(event: Event): Future[Option[Int]] = {
-    db.run(
-      (Events returning Events.map(_.id)) += event
-    )
-  }
-
-  def getEventsForGroup(groupId: Int): Future[Seq[Event]] = {
-    /* val q = for {
-      e <- Events if e.groupId === groupId
-    } yield (e) unused, could be used */
-
-    val extraquery = Events.filter(_.groupId === groupId).result
-
-    db.run(extraquery)
-  }
-
-  def getEventsForUser(userId: Int): Future[Seq[Event]] = {
-    val user = Await.result(getUserById(userId), 3.seconds)
-    user match {
-      case Some(user) => {
-        /* getEventsForGroup(user.groupId.get) */
-        user.groupId match {
-          case Some(groupId) => getEventsForGroup(groupId)
-          case None => throw new UserHasNoGroupException("User with id: " + userId + " has no group")
-        }
-      }
-      case None => throw new UserNotFoundException("User with id: " + userId + " not found")
-    }
-  }
-
-  def allGroups: Future[Seq[Group]] = {
-    db.run(Groups.result)
-  }
-
   def getUserById(id: Long): Future[Option[User]] = {
     val idQuery = for {
       u <- Users if u.id === id
-    } yield (u)
+    } yield u
 
-    db.run(idQuery.result).map {
-      case user => user.headOption
-    }
+    db.run(idQuery.result).map(user => user.headOption)
   }
 
   def updateUser(newUser: User): Future[Option[Long]] = db.run {
@@ -129,7 +85,7 @@ class UserDAO @Inject()(@NamedDatabase("msql") val dbConfigProvider: DatabaseCon
       val q1 = Users.filter(_.id === user.id).update(user).map(_.toLong).asTry
       db.run(q1)
     } else {
-      throw new UserNotFoundException("")
+      throw UserNotFoundException("")
     }
 
     /* i do not know why this does not work
@@ -145,12 +101,6 @@ class UserDAO @Inject()(@NamedDatabase("msql") val dbConfigProvider: DatabaseCon
   }
 
 
-  def addGroup(group: Group): Future[Option[Int]] = {
-    db.run(
-      (Groups returning Groups.map(_.id)) += group
-    )
-  }
-
   def allUsers: Future[Seq[User]] = db.run(Users.result)
 
   def getUserByGroup(retrievedGroupName: String): Future[Seq[User]] = {
@@ -161,16 +111,7 @@ class UserDAO @Inject()(@NamedDatabase("msql") val dbConfigProvider: DatabaseCon
     db.run(userByGroupName.result)
   }
 
-  def getUserByUsername(retrievedUsername: String): Future[Option[User]] = {
-    val q = for {
-      q <- Users if q.username === retrievedUsername
-    } yield (q)
-
-    db.run(q.result).map {
-      seq => seq.headOption
-    }
-  }
-
+  /* overloaded from above */
   def getUserByGroup(retrievedGroupId: Int): Future[Seq[User]] = {
     val userByGroupName = for {
       (user, group) <- Users join Groups on (_.groupId === _.id) if group.id === retrievedGroupId
@@ -179,43 +120,16 @@ class UserDAO @Inject()(@NamedDatabase("msql") val dbConfigProvider: DatabaseCon
     db.run(userByGroupName.result)
   }
 
+  def getUserByUsername(retrievedUsername: String): Future[Option[User]] = {
+    val q = for {
+    q <- Users if q.username === retrievedUsername
+    } yield q
 
-
-  private class UsersTable(tag: Tag) extends Table[User](tag, "user") {
-    def id = column[Long]("id", O.PrimaryKey, O.AutoInc)
-    def username = column[String]("username", O.SqlType("VARCHAR(100)"))
-    def password = column[String]("password")
-    def admin = column[Option[Boolean]]("isadmin")
-
-    def groupId = column[Option[Int]]("group_id")
-    def group = foreignKey("group_id", groupId, Groups)(_.id)
-
-    override def * = (id, username, password, admin, groupId) <> (User.tupled, User.unapply)
-
-    def idxUsername = index("idx_username", username, unique = true)
+    db.run(q.result).map {
+      seq => seq.headOption
+    }
   }
 
-  private class GroupsTable(tag: Tag) extends Table[Group](tag, "group") {
-    def id = column[Option[Int]]("id", O.PrimaryKey, O.AutoInc)
-    def groupName = column[String]("group_name", O.SqlType("VARCHAR(100)"))
-
-    override def * = (id, groupName) <> (Group.tupled, Group.unapply)
-
-    def idxGroupName = index("idx_groupName", groupName, unique = true)
-  }
-
-  private class EventsTable(tag: Tag) extends Table[Event](tag, "event") {
-    def id = column[Option[Int]]("id", O.PrimaryKey, O.AutoInc)
-    def eventName = column[String]("event_name")
-
-    def from = column[Long]("from")
-    def to = column[Long]("to")
-
-    def groupId = column[Option[Int]]("group_id")
-    def group = foreignKey("group_id", groupId, Groups)(_.id)
-
-    override def * = (id, eventName, from, to, groupId) <> (Event.tupled, Event.unapply)
-  }
 
 
 }

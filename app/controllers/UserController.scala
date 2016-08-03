@@ -3,7 +3,7 @@ package controllers
 
 import javax.inject.Inject
 
-import dao.UserDAO
+import dao.{EventDAO, UserDAO}
 import model.{Event, User, UserHasNoGroupException, UserNotFoundException}
 import org.joda.time.DateTime
 import play.api.data.Form
@@ -24,7 +24,7 @@ import scala.concurrent.duration._
 case class EventWithTimeStamp(id: Option[Int], eventName: String, from: DateTime, to: Option[DateTime], groupId: Option[Int])
 case class TempEvent(eventName: String, from: String, groupId: Int)
 
-class UserController @Inject()(val messagesApi: MessagesApi, userDao: UserDAO) extends Controller with I18nSupport{
+class UserController @Inject()(val messagesApi: MessagesApi, userDao: UserDAO, eventDao: EventDAO) extends Controller with I18nSupport{
 
   implicit val eventWrites = new Writes[EventWithTimeStamp] {
     def writes(event: EventWithTimeStamp) = Json.obj(
@@ -57,7 +57,7 @@ class UserController @Inject()(val messagesApi: MessagesApi, userDao: UserDAO) e
     )(addEventFormData.apply)(addEventFormData.unapply)
   )
 
-  val allGroups = Await.result(userDao.allGroups, 3.seconds)
+  /* val allGroups = Await.result(userDao.allGroups, 3.seconds) */
 
   def userPage = Action { request =>
     val username = request.session.get("connected").headOption
@@ -93,7 +93,7 @@ class UserController @Inject()(val messagesApi: MessagesApi, userDao: UserDAO) e
       data => {
 
         val event = Event(Some(0), data.eventName, data.from.getMillis, data.to.getMillis, Some(data.groupId))
-        val eventid = Await.result(userDao.addEvent(event), 3.seconds)
+        /* val eventid = Await.result(userDao.addEvent(event), 3.seconds) */
 
         Redirect("/user")
       }
@@ -128,7 +128,7 @@ class UserController @Inject()(val messagesApi: MessagesApi, userDao: UserDAO) e
 
   def eventsForUserJson(userId: Int) = Action {
     try {
-      val eventsSeq = Await.result(userDao.getEventsForUser(userId), 3.seconds)
+      val eventsSeq = Await.result(eventDao.getEventsForUser(userId), 3.seconds)
 
       val withTimeStamps = eventsSeq.seq.map {
         event => new EventWithTimeStamp(event.id, event.eventName, new DateTime(event.from), Some(new DateTime(event.to)), event.groupId)
@@ -162,7 +162,7 @@ class UserController @Inject()(val messagesApi: MessagesApi, userDao: UserDAO) e
 
         val dbEvent = Event(Some(0), middleMan.eventName, middleMan.from.getMillis, to, middleMan.groupId)
 
-        val eventIdOption = Await.result(userDao.addEvent(dbEvent), 3.seconds)
+        val eventIdOption = Await.result(eventDao.addEvent(dbEvent), 3.seconds)
 
         if (eventIdOption.isDefined) {
           Ok(Json.obj("status" ->"OK", "message" -> ("Event '" + event.eventName + "' saved with id: " + eventIdOption.get) ))
