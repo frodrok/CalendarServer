@@ -44,8 +44,41 @@ class UserRestController @Inject()(userDao: UserDAO) extends Controller {
     )
   }
 
-  def getUser(userId: Int) = Action {
-    val userOption = Await.result(userDao.getUserById(userId), 3.seconds)
+  private def userToJsonUser(user: User): JsonUser = {
+    JsonUser(Some(user.id.toInt), user.username, user.password, user.admin, user.groupId)
+  }
+
+  def getUser(userId: Int) = Action.async { implicit request =>
+    val userIdLong = userId.toLong
+    val userOptionFuture = userDao.getUserById(userIdLong)
+
+    userOptionFuture.map {
+      userOption => userOption.map {
+            user => userToJsonUser(user)
+          } match {
+            case Some(jsonUser) => Ok(Json.toJson(jsonUser))
+            case None => NotFound
+          }
+        }
+  }
+
+
+  def getUserByUsername(username: String) = Action.async {
+    val userOptionFuture = userDao.getUserByUsername(username)
+
+    userOptionFuture.map {
+      userOption => userOption.map {
+        user => userToJsonUser(user)
+      } match {
+        case Some(jsonUser) => Ok(Json.toJson(jsonUser))
+        case None => NotFound
+      }
+    }
+  }
+
+
+  // old method
+    /* val userOption = Await.result(userDao.getUserById(userId), 3.seconds)
 
     val jsonUserOption = userOption.map {
       user => Some(JsonUser(Some(user.id.toInt), user.username, user.password, user.admin, user.groupId))
@@ -55,7 +88,7 @@ class UserRestController @Inject()(userDao: UserDAO) extends Controller {
       case Some(user) => Ok(Json.toJson(user))
       case None => NotFound
     }
-  }
+  } */
 
   def login = Action.async(BodyParsers.parse.json) { request =>
     val userResult = request.body.validate[JsonUser]
