@@ -92,7 +92,7 @@ class UserController @Inject()(val messagesApi: MessagesApi, userDao: UserDAO, e
       },
       data => {
 
-        val event = Event(Some(0), data.eventName, data.from.getMillis, data.to.getMillis, Some(data.groupId))
+        /* val event = Event(Some(0), data.eventName, data.from.getMillis, data.to.getMillis, Some(data.groupId)) */
         /* val eventid = Await.result(userDao.addEvent(event), 3.seconds) */
 
         Redirect("/user")
@@ -126,7 +126,7 @@ class UserController @Inject()(val messagesApi: MessagesApi, userDao: UserDAO, e
     Redirect("/").withNewSession
   }
 
-  def eventsForUserJson(userId: Int) = Action {
+  /* def eventsForUserJson(userId: Int) = Action {
     try {
       val eventsSeq = Await.result(eventDao.getEventsForUser(userId), 3.seconds)
 
@@ -144,9 +144,9 @@ class UserController @Inject()(val messagesApi: MessagesApi, userDao: UserDAO, e
 
     // Ok("dropped out of catch")
 
-    }
+    } */
 
-  def saveEvent(userId: Int) = Action(BodyParsers.parse.json) { request =>
+  /* def saveEvent(userId: Int) = Action(BodyParsers.parse.json) { request =>
     val eventResult = request.body.validate[TempEvent]
     eventResult.fold(
       errors => {
@@ -174,7 +174,7 @@ class UserController @Inject()(val messagesApi: MessagesApi, userDao: UserDAO, e
       }
 
     )
-  }
+  } */
 }
 
 case class addEventFormData(eventName: String, from: DateTime, to: DateTime, fromClock: Int, toClock: Int, groupId: Int)

@@ -2,6 +2,7 @@ package dao
 
 import javax.inject.Inject
 
+import com.mysql.jdbc.exceptions.jdbc4.MySQLDataException
 import model._
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import play.db.NamedDatabase
@@ -10,7 +11,7 @@ import slick.driver.JdbcProfile
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 
 
@@ -20,16 +21,21 @@ class EventDAO @Inject()(@NamedDatabase("msql") val dbConfigProvider: DatabaseCo
 
   private val Events = TableQuery[EventsTable]
 
-  def addEvent(event: Event): Future[Try[Int]] = {
+  def allEvents: Future[Seq[Event]] = {
+    db.run(Events.result)
+  }
+
+  def addEvent(event: Event): Future[Try[Option[Int]]] = {
     db.run(
-      (Events returning Events.map(_.id)) += event
+      ((Events returning Events.map(_.id)) += event).asTry
     )
   }
 
   def updateEvent(retrievedEvent: Event): Future[Try[Int]] = db.run {
+    /* investigate whentf exception happens?? */
     Events.filter(_.id === retrievedEvent.id).update(retrievedEvent).map {
-      case 0 => None
-      case _ => retrievedEvent.id
+      case 0 => Failure(new MySQLDataException("could not update wadafaka is this, L:36 in EventDAO"))
+      case _ => Success(retrievedEvent.id.get)
     }
   }
 
@@ -47,22 +53,22 @@ class EventDAO @Inject()(@NamedDatabase("msql") val dbConfigProvider: DatabaseCo
     }
   }
 
-  def getEventsForGroup(groupId: Int): Future[Seq[Event]] = {
+  def getEventsForGroup(groupId: Int): Future[Try[Seq[Event]]] = {
     /* val q = for {
       e <- Events if e.groupId === groupId
     } yield (e) unused, could be used */
 
-    val extraquery = Events.filter(_.groupId === groupId).result
+    val extraquery = Events.filter(_.groupId === groupId).result.asTry
 
     db.run(extraquery)
   }
 
-  def getEventsForUser(userId: Int): Future[Seq[Event]] = {
+  def getEventsForUser(userId: Int): Future[Try[Seq[Event]]] = {
     /* TODO: change to 100% asynchronous code, userDAO.getUserById(userId).map { etc } */
+    
     val user = Await.result(userDAO.getUserById(userId), 3.seconds)
     user match {
       case Some(user) => {
-        /* getEventsForGroup(user.groupId.get) */
         user.groupId match {
           case Some(groupId) => getEventsForGroup(groupId)
           case None => throw UserHasNoGroupException("User with id: " + userId + " has no group")
@@ -70,6 +76,20 @@ class EventDAO @Inject()(@NamedDatabase("msql") val dbConfigProvider: DatabaseCo
       }
       case None => throw UserNotFoundException("User with id: " + userId + " not found")
     }
+
+    /* miserable failure :'( try again */
+    /* userDAO.getUserById(userId).map {
+      user => user match {
+        case Some(user) => {
+          user.groupId match {
+            /* case Some(groupId) => Success(getEventsForGroup(groupId)) */
+            case Some(groupId) => getEventsForGroup(groupId)
+            case None => Failure(UserHasNoGroupException("User with id: " + userId + " has no group"))
+          }
+        }
+        case None => Failure(UserNotFoundException("User with id: " + userId + " not found"))
+      }
+    } */
   }
 
   def deleteEvent(eventId: Int): Future[Int] = {

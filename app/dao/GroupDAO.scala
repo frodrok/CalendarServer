@@ -10,6 +10,7 @@ import slick.driver.MySQLDriver.api._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.util.Try
 
 class GroupDAO @Inject()(@NamedDatabase("msql") val dbConfigProvider: DatabaseConfigProvider) extends HasDatabaseConfigProvider[JdbcProfile] {
 
@@ -18,9 +19,9 @@ class GroupDAO @Inject()(@NamedDatabase("msql") val dbConfigProvider: DatabaseCo
   private val Users = TableQuery[UsersTable]
   private val Groups = TableQuery[GroupsTable]
 
-  def addGroup(group: Group): Future[Option[Int]] = {
+  def addGroup(group: Group): Future[Try[Int]] = {
     db.run(
-      (Groups returning Groups.map(_.id)) += group
+      (Groups returning Groups.map(_.id) += group).asTry
     )
   }
 
@@ -28,7 +29,7 @@ class GroupDAO @Inject()(@NamedDatabase("msql") val dbConfigProvider: DatabaseCo
   def updateGroup(retrievedGroup: Group): Future[Option[Int]] = db.run {
     Groups.filter(_.id === retrievedGroup.id).update(retrievedGroup).map {
       case 0 => None
-      case _ => retrievedGroup.id
+      case _ => Some(retrievedGroup.id)
     }
   }
 

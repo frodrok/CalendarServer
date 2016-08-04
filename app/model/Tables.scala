@@ -19,7 +19,7 @@ class UsersTable(tag: Tag) extends Table[User](tag, "user") {
 }
 
 class GroupsTable(tag: Tag) extends Table[Group](tag, "group") {
-  def id = column[Option[Int]]("id", O.PrimaryKey, O.AutoInc)
+  def id = column[Int]("id", O.PrimaryKey, O.AutoInc)
   def groupName = column[String]("group_name", O.SqlType("VARCHAR(100)"))
   def active = column[Boolean]("active", O.Default(true))
 
@@ -38,7 +38,7 @@ class EventsTable(tag: Tag) extends Table[Event](tag, "event") {
   def from = column[Long]("from")
   def to = column[Long]("to")
 
-  def groupId = column[Option[Int]]("group_id")
+  def groupId = column[Int]("group_id")
   def group = foreignKey("group_id", groupId, Groups)(_.id)
 
   override def * = (id, eventName, from, to, groupId) <> (Event.tupled, Event.unapply)
