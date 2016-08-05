@@ -53,12 +53,12 @@ class EventDAO @Inject()(@NamedDatabase("msql") val dbConfigProvider: DatabaseCo
     }
   }
 
-  def getEventsForGroup(groupId: Int): Future[Try[Seq[Event]]] = {
+  def getEventsForGroup(groupId: Int): Future[Seq[Event]] = {
     /* val q = for {
       e <- Events if e.groupId === groupId
     } yield (e) unused, could be used */
 
-    val extraquery = Events.filter(_.groupId === groupId).result.asTry
+    val extraquery = Events.filter(_.groupId === groupId).result
 
     db.run(extraquery)
   }
@@ -66,16 +66,22 @@ class EventDAO @Inject()(@NamedDatabase("msql") val dbConfigProvider: DatabaseCo
   def getEventsForUser(userId: Int): Future[Try[Seq[Event]]] = {
     /* TODO: change to 100% asynchronous code, userDAO.getUserById(userId).map { etc } */
     
-    val user = Await.result(userDAO.getUserById(userId), 3.seconds)
-    user match {
+    val userx = Await.result(userDAO.getUserById(userId), 3.seconds)
+
+    userx match {
       case Some(user) => {
         user.groupId match {
-          case Some(groupId) => getEventsForGroup(groupId)
-          case None => throw UserHasNoGroupException("User with id: " + userId + " has no group")
+          case Some(groupId) => {
+            getEventsForGroup(groupId).map {
+              events => Success(events)
+            }
+          }
+          case None => Future(Failure(UserHasNoGroupException("")))
         }
       }
-      case None => throw UserNotFoundException("User with id: " + userId + " not found")
+      case None => Future(Failure(UserNotFoundException("")))
     }
+
 
     /* miserable failure :'( try again */
     /* userDAO.getUserById(userId).map {
@@ -91,6 +97,8 @@ class EventDAO @Inject()(@NamedDatabase("msql") val dbConfigProvider: DatabaseCo
       }
     } */
   }
+
+
 
   def deleteEvent(eventId: Int): Future[Int] = {
     val q = Events.filter(_.id === eventId)

@@ -24,13 +24,21 @@ class EventRestController @Inject()(eventDAO: EventDAO) extends Controller {
   val effinHeaders = "Content-Type" -> "application/json; charset=utf-8"
 
   implicit val eventWrites = new Writes[JsonEvent] {
-    def writes(event: JsonEvent) = Json.obj(
-      "id" -> event.id,
-      "eventName" -> event.eventName,
-      "from" -> event.from.toString,
-      "to" -> event.to.toString,
-      "groupId" -> event.groupId
-    )
+    def writes(event: JsonEvent) = {
+
+      val toAsString: String = event.to match {
+        case Some(date) => date
+        case None => "None"
+      }
+
+      Json.obj(
+        "id" -> event.id,
+        "title" -> event.eventName,
+        "from" -> event.from.toString,
+        "to" -> toAsString,
+        "groupId" -> event.groupId
+      )
+    }
   }
 
   implicit val eventReads: Reads[JsonEvent] = (
@@ -62,10 +70,10 @@ class EventRestController @Inject()(eventDAO: EventDAO) extends Controller {
             result match {
               case Success(res) => {
                 Logger.debug("Added event: " + event.eventName)
-                Created.withHeaders("Location" -> ("/event/" + res))
+                Created.withHeaders("Location" -> ("/events/" + res))
               }
               case Failure(e: MySQLIntegrityConstraintViolationException) => {
-                toFailureJson("Event needs to have a groupId")
+                toFailureJson("No group with that ID")
               }
               case Failure(e: Exception) => {
                 Logger.error(e.toString)
@@ -110,6 +118,20 @@ class EventRestController @Inject()(eventDAO: EventDAO) extends Controller {
         }
       }
     }
+
+    /* pseudo for recovering from bad future */
+    /* eventDAO.getEventsForUser(userId).map {
+      events => {
+        val asJsonEvents = events.map(_.toJsonEvent)
+        Ok(Json.toJson(asJsonEvents)).withHeaders(effinHeaders)
+      } recover {
+        case e: UserHasNoGroupException => toFailureJson("User has no group")
+        case e: UserNotFoundException => NotFound
+        case e: Exception => {
+          Logger.warn("fallthrough in eventsforuserjson")
+        }
+      }
+    } */
 
   }
 

@@ -72,11 +72,11 @@ class UserDAO @Inject()(@NamedDatabase("msql") val dbConfigProvider: DatabaseCon
     db.run(Users.filter(i => i.id === id || i.username === username).exists.result)
   }
 
-  def update(user: User): Future[Try[Long]] = {
+  def update(user: User): Future[Option[Long]] = {
     val wat = Await.result(exists(user.id, user.username), 3.seconds)
 
     if (wat) {
-      val q1 = Users.filter(_.id === user.id).update(user).map(_.toLong).asTry
+      val q1 = Users.filter(_.id === user.id).update(user).map(int => Some(int.toLong))
       db.run(q1)
     } else {
       throw UserNotFoundException("")

@@ -2,7 +2,8 @@ package dao
 
 import javax.inject.Inject
 
-import model.{Group, GroupsTable, UsersTable}
+import com.mysql.jdbc.exceptions.jdbc4.MySQLDataException
+import model.{Event, Group, GroupsTable, UsersTable}
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import play.db.NamedDatabase
 import slick.driver.JdbcProfile
@@ -10,7 +11,7 @@ import slick.driver.MySQLDriver.api._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 class GroupDAO @Inject()(@NamedDatabase("msql") val dbConfigProvider: DatabaseConfigProvider) extends HasDatabaseConfigProvider[JdbcProfile] {
 
@@ -28,7 +29,7 @@ class GroupDAO @Inject()(@NamedDatabase("msql") val dbConfigProvider: DatabaseCo
   /* just use updategroup to inactivate it */
   def updateGroup(retrievedGroup: Group): Future[Option[Int]] = db.run {
     Groups.filter(_.id === retrievedGroup.id).update(retrievedGroup).map {
-      case 0 => None
+      case 0 => throw new MySQLDataException("could not update group")
       case _ => Some(retrievedGroup.id)
     }
   }

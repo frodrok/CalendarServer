@@ -106,12 +106,9 @@ class UserRestController @Inject()(userDao: UserDAO) extends Controller {
             if (userOption.isDefined) {
               loginUser(temp, userOption.get) match {
                 case false => {
-                  BadRequest(Json.obj("status" -> "KO", "message" -> ("login failed")))
+                  BadRequest(Json.obj("status" -> "KO", "message" -> "login failed"))
                 }
-                case true => {
-                  Ok
-                }
-
+                case true => Ok
               }
             } else {
               BadRequest(Json.obj("status" -> "KO", "message" -> ("login failed")))
@@ -157,7 +154,6 @@ class UserRestController @Inject()(userDao: UserDAO) extends Controller {
                 Logger.debug("Added user " + user.username)
 
                 Created.withHeaders("Location" -> ("/user/" + res))
-
               }
               case Failure(e: MySQLIntegrityConstraintViolationException) => {
                 // BadRequest(Json.obj("status" -> "KO", "message" -> ("Username already exists, use update instead")))
@@ -165,7 +161,7 @@ class UserRestController @Inject()(userDao: UserDAO) extends Controller {
               }
               case Failure(e: Exception) => {
                 Logger.error(e.toString)
-                BadRequest(Json.obj("status" -> "KO", "message" -> (e.getMessage)))
+                BadRequest(Json.obj("status" -> "KO", "message" -> e.getMessage))
               }
             }
           }
@@ -185,23 +181,16 @@ class UserRestController @Inject()(userDao: UserDAO) extends Controller {
       user => {
         val userToDb = User(user.id.get, user.username, user.password, user.admin, user.groupId)
 
-        userDao.update(userToDb).map {
-          result => {
-            result match {
-              case Success(res) => {
-                Logger.debug("Result: " + res)
-                Ok
-              }
-              case Failure(e: UserNotFoundException) => {
-                NotFound
-              }
-              case Failure(e: MySQLIntegrityConstraintViolationException) => {
-                BadRequest(Json.obj("status" -> "KO", ("message" -> "No such groupId")))
-              }
-              case Failure(e: Exception) => {
-                BadRequest("oh shit son, fall through in UserRestController.update")
-              }
-            }
+        userDao.updateUser(userToDb).map {
+          result => result match {
+            case None => NotFound
+            case Some(result) => Ok
+          }
+        } recover {
+          case e: UserNotFoundException => NotFound
+          case e: Exception => {
+            Logger.debug("fallthrough [UserREstController.update")
+            InternalServerError(e.getMessage)
           }
         }
       }

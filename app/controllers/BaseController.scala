@@ -2,12 +2,14 @@ package controllers
 
 import javax.inject.Inject
 
+import controllers.rest.restmodel.JsonEvent
 import dao.UserDAO
 import model.{Event, Group, User}
 import org.joda.time.DateTime
 import play.api.data.Form
 import play.api.data.Forms._
 import play.api.i18n.{I18nSupport, MessagesApi}
+import play.api.libs.json.{Json, Writes}
 import play.api.mvc.{Action, Controller}
 
 import scala.concurrent.Await
@@ -86,8 +88,11 @@ class BaseController @Inject()(val messagesApi: MessagesApi, userDao: UserDAO) e
     Ok("db initiated")
   }
 
+  /* case class JsonEvent(id: Option[Int], eventName: String, from: String, to: Option[String], groupId: Int) */
   def test = Action {
-    Ok("test")
+
+    Ok("lolwut")
+
 
   }
 

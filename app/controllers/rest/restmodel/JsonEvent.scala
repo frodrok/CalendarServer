@@ -11,7 +11,11 @@ case class JsonEvent(id: Option[Int], eventName: String, from: String, to: Optio
 
   val fromDate: DateTime = new DateTime(from)
   val toDateOption: Option[DateTime] = to match {
-    case Some(date) => Some(new DateTime(date))
+    case Some(date) =>
+      date match {
+        case "None" => None
+        case _ => Some(new DateTime(date))
+      }
     case None => None
   }
 
