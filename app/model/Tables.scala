@@ -10,8 +10,8 @@ class UsersTable(tag: Tag) extends Table[User](tag, "user") {
   def password = column[String]("password")
   def admin = column[Option[Boolean]]("isadmin")
 
-  def groupId = column[Option[Int]]("group_id")
-  def group = foreignKey("group_id", groupId, Groups)(_.id)
+  def groupId = column[Option[Int]]("user_group_id")
+  def group = foreignKey("user_group_id", groupId, Groups)(_.id)
 
   override def * = (id, username, password, admin, groupId) <> (User.tupled, User.unapply)
 
@@ -38,8 +38,8 @@ class EventsTable(tag: Tag) extends Table[Event](tag, "event") {
   def from = column[Long]("from")
   def to = column[Long]("to")
 
-  def groupId = column[Int]("group_id")
-  def group = foreignKey("group_id", groupId, Groups)(_.id)
+  def groupId = column[Int]("event_group_id")
+  def group = foreignKey("event_group_id", groupId, Groups)(_.id)
 
   override def * = (id, eventName, from, to, groupId) <> (Event.tupled, Event.unapply)
 }

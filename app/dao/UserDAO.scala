@@ -3,6 +3,7 @@ package dao
 import javax.inject.Inject
 
 import model._
+import play.api.Logger
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import play.db.NamedDatabase
 import slick.driver.JdbcProfile
@@ -30,10 +31,20 @@ class UserDAO @Inject()(@NamedDatabase("msql") val dbConfigProvider: DatabaseCon
     droppa manuellt istället */
 
     db.run(DBIO.seq(
-      Groups.schema.create,
-      Events.schema.create,
+      Groups.schema.create
+    )).onFailure{ case ex => Logger.debug(s"error in dbSetup groups: $ex.getMessage") }
+
+    Thread sleep 2000
+
+    db.run(DBIO.seq(
+      Events.schema.create
+    )).onFailure{ case ex => Logger.debug(s"error in dbSetup events: $ex.getMessage") }
+
+    Thread sleep 2000
+
+    db.run(DBIO.seq(
       Users.schema.create
-    )).onFailure{ case ex => println(ex) }
+    )).onFailure{ case ex => Logger.debug(s"error in dbSetup user: $ex.getMessage") }
 
 
   }

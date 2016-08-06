@@ -1,10 +1,14 @@
 package model
 
-import controllers.rest.restmodel.JsonGroup
+import controllers.rest.restmodel.{JsonGroup, JsonUser}
 
 case class User(id: Long, username: String, password: String,
                 admin: Option[Boolean] = None,
-                groupId: Option[Int] = None)
+                groupId: Option[Int] = None) {
+  def toJsonUser: JsonUser = {
+    JsonUser(Some(id.toInt), username, password, admin, groupId)
+  }
+}
 
 case class Group(id: Int, groupName: String = "", active: Boolean) {
   def toJsonGroup: JsonGroup = {

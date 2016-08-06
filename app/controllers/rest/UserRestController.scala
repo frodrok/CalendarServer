@@ -1,3 +1,5 @@
+
+
 package controllers.rest
 
 import javax.inject.Inject
@@ -34,15 +36,17 @@ class UserRestController @Inject()(userDao: UserDAO) extends Controller {
       (JsPath \ "groupId").readNullable[Int]
     )(JsonUser.apply _)
 
-  implicit val userWrites = new Writes[JsonUser] {
-    def writes(user: JsonUser) = Json.obj(
-      "id" -> user.id,
-      "username" -> user.username,
-      "password" -> user.password,
-      "admin" -> user.admin,
-      "groupId" -> user.groupId
-    )
-  }
+
+
+   implicit val userWrites = new Writes[JsonUser] {
+      def writes(user: JsonUser) = Json.obj(
+        "id" -> user.id,
+        "username" -> user.username,
+        "password" -> user.password,
+        "admin" -> user.admin,
+        "groupId" -> user.groupId
+      )
+    }
 
   private def userToJsonUser(user: User): JsonUser = {
     JsonUser(Some(user.id.toInt), user.username, user.password, user.admin, user.groupId)
@@ -169,6 +173,13 @@ class UserRestController @Inject()(userDao: UserDAO) extends Controller {
 
       }
     )
+  }
+
+  def allUsersForGroup(groupId: Int) = Action.async {
+    userDao.getUserByGroup(groupId).map(users => {
+      val asJson = users.map(_.toJsonUser)
+      Ok(Json.toJson(asJson))
+    })
   }
 
   def update(userId: Int) = Action.async(BodyParsers.parse.json) { request =>
