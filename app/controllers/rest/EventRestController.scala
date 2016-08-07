@@ -43,14 +43,14 @@ class EventRestController @Inject()(eventDAO: EventDAO) extends Controller {
 
   implicit val eventReads: Reads[JsonEvent] = (
     (JsPath \ "id").readNullable[Int] and
-    (JsPath \ "title").read[String] and
+      (JsPath \ "title").read[String] and
       (JsPath \ "from").read[String] and
       (JsPath \ "to").readNullable[String] and
       (JsPath \ "groupId").read[Int]
-    )(JsonEvent.apply _)
+    ) (JsonEvent.apply _)
 
   def addEvent() = Action.async(BodyParsers.parse.json) { request =>
-     val eventResult = request.body.validate[JsonEvent]
+    val eventResult = request.body.validate[JsonEvent]
 
     eventResult.fold(
       errors => {
@@ -63,26 +63,83 @@ class EventRestController @Inject()(eventDAO: EventDAO) extends Controller {
           case None => 0L
         }
 
-        val eventToDb = Event(event.id, event.eventName, event.fromDate.getMillis, eventToIntoMillis, event.groupId)
+        val eventToDb = Event(event.id, event.eventName, event.fromDate.getMillis, Some(eventToIntoMillis), event.groupId)
 
         eventDAO.addEvent(eventToDb).map {
           result => {
             result match {
-              case Success(res) => {
-                Logger.debug("Added event: " + event.eventName)
-                Created.withHeaders("Location" -> ("/events/" + res))
-              }
-              case Failure(e: MySQLIntegrityConstraintViolationException) => {
-                toFailureJson("No group with that ID")
-              }
-              case Failure(e: Exception) => {
-                Logger.error(e.toString)
-                toFailureJson(e.getMessage)
+              case None => toFailureJson("Option was none, not sure what happened")
+              case Some(result) => {
+                Logger.debug("Added event " + event.eventName)
+                Created.withHeaders("Location" -> ("/events/" + result))
               }
             }
           }
+        } recover {
+          case e: MySQLIntegrityConstraintViolationException => toFailureJson("No group with that ID")
+          case e: Exception => {
+            Logger.error(e.toString)
+            toFailureJson(e.getMessage)
+          }
         }
       }
+    )
+  }
+
+  implicit val dbEventReads: Reads[Event] = (
+    (JsPath \ "id").readNullable[Int] and
+      (JsPath \ "title").read[String] and
+      (JsPath \ "from").read[Long] and
+      (JsPath \ "to").readNullable[Long] and
+      (JsPath \ "groupId").read[Int]
+    )(Event.apply _)
+
+
+  def serializeList = Action.async(BodyParsers.parse.json) { request =>
+    val events = request.body.validate[List[Event]]
+
+    events.fold(
+      errors => {
+        Future(BadRequest(Json.obj("status" -> "KO", "message" -> JsError.toJson(errors))))
+      },
+      success => {
+
+        val ids = success.map {
+          event => {
+            val toCannotBeNull: Event = event.to match {
+              case None => Event(event.id, event.eventName, event.from, Some(0), event.groupId)
+              case Some(long) => event
+            }
+            eventDAO.addEvent(toCannotBeNull)
+          }
+        }
+
+        Future.sequence(ids).map(_.flatten).map {
+          list => Ok(Json.toJson(list))
+        } recover {
+          case ex: Exception => {
+            Logger.error(ex.toString)
+            toFailureJson(ex.getMessage)
+          }
+        }
+      }
+    )
+
+  }
+
+  def serializeListOptions = Action { request =>
+    /* response['Access-Control-Allow-Origin'] = '*'
+    response['Access-Control-Allow-Methods'] = 'POST, GET, OPTIONS'
+    response['Access-Control-Max-Age'] = 1000
+    # note that '*' is not valid for Access-Control-Allow-Headers
+    response['Access-Control-Allow-Headers'] = 'origin, x-csrftoken, content-type, accept' */
+
+    Ok("").withHeaders(
+      "Access-Control-Allow-Origin" -> "*",
+      "Access-Control-Allow-Methods" -> "GET, POST, OPTIONS",
+      "Access-Control-Allow-Headers" -> "Accept, Origin, Content-type, X-Json, X-Prototype-Version, X-Requested-With",
+      "Access-Control-Allow-Credentials" -> "true",
+      "Access-Control-Max-Age" -> (60 * 60 * 24).toString
     )
   }
 
@@ -90,13 +147,29 @@ class EventRestController @Inject()(eventDAO: EventDAO) extends Controller {
     BadRequest(Json.obj("status" -> "KO", "message" -> (message)))
   }
 
+  implicit val dbEventWrites = new Writes[Event] {
+    def writes(event: Event) = {
+
+      val to: Long = event.to match {
+        case None => 0L
+        case Some(value) => value
+      }
+
+      Json.obj(
+        "id" -> event.id,
+        "title" -> event.eventName,
+        "from" -> event.from,
+        "to" -> to,
+        "groupId" -> event.groupId
+      )
+    }
+  }
+
   def allEvents() = Action.async {
     eventDAO.allEvents.map {
       events => {
 
-        val asJsonEvents = events.seq.map(event => dbEventToJsonEvent(event))
-
-        val asJson = Json.toJson(asJsonEvents)
+        val asJson = Json.toJson(events)
         Ok(asJson).withHeaders(effinHeaders)
         }
       }
@@ -107,8 +180,7 @@ class EventRestController @Inject()(eventDAO: EventDAO) extends Controller {
     eventDAO.getEventsForUser(userId).map {
       result => result match {
         case Success(res) => {
-          val asJsonEvents = res.seq.map(event => dbEventToJsonEvent(event))
-          Ok(Json.toJson(asJsonEvents)).withHeaders(effinHeaders)
+          Ok(Json.toJson(res)).withHeaders(effinHeaders)
         }
         case Failure(e: UserHasNoGroupException) => {
           toFailureJson("User has no group")
@@ -135,19 +207,19 @@ class EventRestController @Inject()(eventDAO: EventDAO) extends Controller {
 
   }
 
-  private def dbEventToJsonEvent(dbEvent: Event): JsonEvent = {
+  /* private def dbEventToJsonEvent(dbEvent: Event): JsonEvent = {
     val fromString: String = new DateTime(dbEvent.from).toString
 
     /* WARNING: imperative programming */
     /* can i use pattern matching instead? */
     var toString: Option[String] = None
-    if (dbEvent.to != 0) {
+    if (dbEvent.to != 0L) {
       toString = Some(new DateTime(dbEvent.to).toString)
     }
 
     // JsonEvent(dbEvent.id, dbEvent.eventName, fromString, toString, dbEvent.groupId)
     JsonEvent(dbEvent.id, dbEvent.eventName, fromString, toString, dbEvent.groupId)
-  }
+  } */
 
   private def jsonEventToDbEvent(jsonEvent: JsonEvent): Event = {
     val fromLong: Long = new DateTime(jsonEvent.from).getMillis
@@ -155,15 +227,14 @@ class EventRestController @Inject()(eventDAO: EventDAO) extends Controller {
       case None => 0L
       case Some(string) => new DateTime(string).getMillis
     }
-    Event(jsonEvent.id, jsonEvent.eventName, fromLong, toLong, jsonEvent.groupId)
+    Event(jsonEvent.id, jsonEvent.eventName, fromLong, Some(toLong), jsonEvent.groupId)
   }
 
 
   def getEvent(eventId: Int) = Action.async {
     eventDAO.getEventById(eventId).map {
       case Some(event) => {
-        val jsonEvent = dbEventToJsonEvent(event)
-        Ok(Json.toJson(jsonEvent))
+        Ok(Json.toJson(event))
       }
       case None => NotFound
     }

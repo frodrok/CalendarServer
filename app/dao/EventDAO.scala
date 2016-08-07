@@ -25,9 +25,9 @@ class EventDAO @Inject()(@NamedDatabase("msql") val dbConfigProvider: DatabaseCo
     db.run(Events.result)
   }
 
-  def addEvent(event: Event): Future[Try[Option[Int]]] = {
+  def addEvent(event: Event): Future[Option[Int]] = {
     db.run(
-      ((Events returning Events.map(_.id)) += event).asTry
+      ((Events returning Events.map(_.id)) += event)
     )
   }
 

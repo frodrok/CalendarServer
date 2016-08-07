@@ -36,7 +36,7 @@ class EventsTable(tag: Tag) extends Table[Event](tag, "event") {
   def eventName = column[String]("event_name")
 
   def from = column[Long]("from")
-  def to = column[Long]("to")
+  def to = column[Option[Long]]("to")
 
   def groupId = column[Int]("event_group_id")
   def group = foreignKey("event_group_id", groupId, Groups)(_.id)
