@@ -16,7 +16,7 @@ case class Group(id: Int, groupName: String = "", active: Boolean) {
   }
 }
 
-case class Event(id: Option[Int], eventName: String, from: Long, to: Option[Long], groupId: Int)
+case class Event(id: Option[Int], eventName: String, from: Long, to: Option[Long], groupId: Int, background: Option[Boolean] = Some(false))
 
 
 case class UserNotFoundException(s: String) extends Exception

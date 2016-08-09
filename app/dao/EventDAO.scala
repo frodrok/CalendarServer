@@ -31,11 +31,11 @@ class EventDAO @Inject()(@NamedDatabase("msql") val dbConfigProvider: DatabaseCo
     )
   }
 
-  def updateEvent(retrievedEvent: Event): Future[Try[Int]] = db.run {
+  def updateEvent(retrievedEvent: Event): Future[Int] = db.run {
     /* investigate whentf exception happens?? */
     Events.filter(_.id === retrievedEvent.id).update(retrievedEvent).map {
-      case 0 => Failure(new MySQLDataException("could not update wadafaka is this, L:36 in EventDAO"))
-      case _ => Success(retrievedEvent.id.get)
+      case 0 => throw new MySQLDataException("Could could not update wadafaka is this, L:36 in EventDAO")
+      case _ => retrievedEvent.id.get
     }
   }
 
@@ -63,41 +63,15 @@ class EventDAO @Inject()(@NamedDatabase("msql") val dbConfigProvider: DatabaseCo
     db.run(extraquery)
   }
 
-  def getEventsForUser(userId: Int): Future[Try[Seq[Event]]] = {
-    /* TODO: change to 100% asynchronous code, userDAO.getUserById(userId).map { etc } */
-    
-    val userx = Await.result(userDAO.getUserById(userId), 3.seconds)
-
-    userx match {
-      case Some(user) => {
-        user.groupId match {
-          case Some(groupId) => {
-            getEventsForGroup(groupId).map {
-              events => Success(events)
-            }
-          }
-          case None => Future(Failure(UserHasNoGroupException("")))
-        }
+  def getEventsForUser(userId: Int): Future[Seq[Event]] = {
+    userDAO.getUserById(userId).flatMap {
+      case None => throw UserNotFoundException("")
+      case Some(user) => user.groupId match {
+          case None => throw UserHasNoGroupException("")
+          case Some(groupId) => getEventsForGroup(groupId)
       }
-      case None => Future(Failure(UserNotFoundException("")))
     }
-
-
-    /* miserable failure :'( try again */
-    /* userDAO.getUserById(userId).map {
-      user => user match {
-        case Some(user) => {
-          user.groupId match {
-            /* case Some(groupId) => Success(getEventsForGroup(groupId)) */
-            case Some(groupId) => getEventsForGroup(groupId)
-            case None => Failure(UserHasNoGroupException("User with id: " + userId + " has no group"))
-          }
-        }
-        case None => Failure(UserNotFoundException("User with id: " + userId + " not found"))
-      }
-    } */
   }
-
 
 
   def deleteEvent(eventId: Int): Future[Int] = {

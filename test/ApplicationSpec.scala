@@ -1,13 +1,22 @@
+import javax.inject.Inject
+
+import `trait`.EventJsonHandler
+import dao.EventDAO
+import model.Event
+import org.joda.time.DateTime
 import org.scalatestplus.play._
+import play.api.Logger
+import play.api.libs.json.Json
 import play.api.test._
 import play.api.test.Helpers._
+import slick.lifted.TableQuery
 
 /**
  * Add your spec here.
  * You can mock out a whole application including requests, plugins etc.
  * For more information, consult the wiki.
  */
-class ApplicationSpec extends PlaySpec with OneAppPerTest {
+class ApplicationSpec extends PlaySpec with OneAppPerTest with EventJsonHandler {
 
   "Routes" should {
 
@@ -17,26 +26,40 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
 
   }
 
-  "HomeController" should {
+  "Event REST postable" should {
+    "be postable" in {
+      running(FakeApplication(additionalConfiguration = inMemoryDatabase())) {
+        val from = DateTime.now
+        val to = from.plusDays(1)
 
-    "render the index page" in {
-      val home = route(app, FakeRequest(GET, "/")).get
+        val event: Event = Event(None, "hey now", from.getMillis, Some(to.getMillis), 1, None)
 
-      status(home) mustBe OK
-      contentType(home) mustBe Some("text/html")
-      contentAsString(home) must include ("Your new application is ready.")
+        val jsonEvent = Json.toJson(event)
+
+        // contentAsString(route(app, FakeRequest(GET, "/events")).get) mustBe "0"
+        /* contentAsString(route(app, FakeRequest(
+          POST,
+          "/events",
+          FakeHeaders(Seq("Content-Type" -> "application/json")),
+          jsonEvent
+        ))) */
+        val wat = route(app, FakeRequest(
+          POST,
+          "/events",
+          FakeHeaders(Seq("Content-Type" -> "application/json")),
+          jsonEvent
+        )).get
+
+        // Logger.debug(wat)
+
+        // status(wat) mustBe equalTo(OK)
+        status(wat) mustBe equal(OK)
+
+      }
     }
-
   }
+  implicit val eventReads = getReads
+  implicit val eventWrites = getWrites
 
-  "CountController" should {
-
-    "return an increasing count" in {
-      contentAsString(route(app, FakeRequest(GET, "/count")).get) mustBe "0"
-      contentAsString(route(app, FakeRequest(GET, "/count")).get) mustBe "1"
-      contentAsString(route(app, FakeRequest(GET, "/count")).get) mustBe "2"
-    }
-
-  }
 
 }
