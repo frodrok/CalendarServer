@@ -52,8 +52,8 @@ class EventRestTest extends PlaySpec with OneAppPerTest with EventJsonHandler wi
     val to = DateTime.now().plusDays(1)
 
     group match {
-      case false => Event(id, "hey now", from.getMillis, Some(to.getMillis), 0, None)
-      case true => Event(id, "hey now", from.getMillis, Some(to.getMillis), 1, None)
+      case false => Event(id, "hey now", from.getMillis, Some(to.getMillis), 0, None, None)
+      case true => Event(id, "hey now", from.getMillis, Some(to.getMillis), 1, None, None)
     }
   }
 
@@ -133,6 +133,34 @@ class EventRestTest extends PlaySpec with OneAppPerTest with EventJsonHandler wi
           list
         }
       }.get must have size 7 // (5 updated, 2 new)
+    }
+
+    var headerLocation: Option[String] = Some("hey")
+
+    "delete event" in {
+      val event = generateEvent(None, true)
+      val fknId = route(testApp, FakeRequest(POST,
+        "/events",
+        FakeHeaders(Seq("Content-Type" -> "application/json")),
+        Json.toJson(event))).map {
+        response => {
+          headerLocation = header("Location", response)
+
+          Logger.debug(contentAsString(response))
+
+          val fknString: String = headerLocation.get takeRight 2
+          val watId: Int = Integer.parseInt(fknString)
+
+          watId
+        }
+      }
+
+      Logger.debug(fknId.get.toString)
+
+      fknId must not be 0
+
+      route(testApp, FakeRequest(DELETE,
+        "/events/" + fknId)).map(status) mustBe Some(NO_CONTENT)
     }
 
   }

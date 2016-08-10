@@ -79,10 +79,17 @@ class EventDAO @Inject()(@NamedDatabase("msql") val dbConfigProvider: DatabaseCo
   }
 
 
-  def deleteEvent(eventId: Int): Future[Int] = {
-    val q = Events.filter(_.id === eventId)
+  def deleteEvent(eventId: Int): Future[Option[Int]] = {
+    /* val q = Events.filter(_.id === eventId)
     val action = q.delete
-    db.run(action)
+    db.run(action)*/
+
+    db.run(
+      Events.filter(_.id === eventId).delete.map {
+        case 0 => None
+        case 1 => Some(eventId)
+      }
+    )
   }
 
 

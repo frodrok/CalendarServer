@@ -23,7 +23,8 @@ trait EventJsonHandler {
         "from" -> event.from,
         "to" -> to,
         "groupId" -> event.groupId,
-        "background" -> event.background
+        "background" -> event.background,
+        "color" -> event.color
       )
     }
   }
@@ -34,7 +35,8 @@ trait EventJsonHandler {
       (JsPath \ "from").read[Long] and
       (JsPath \ "to").readNullable[Long] and
       (JsPath \ "groupId").read[Int] and
-      (JsPath \ "background").readNullable[Boolean]
+      (JsPath \ "background").readNullable[Boolean] and
+      (JsPath \ "color").readNullable[String]
     ) (Event.apply _)
 
   def getWrites = {

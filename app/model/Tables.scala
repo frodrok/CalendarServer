@@ -39,9 +39,10 @@ class EventsTable(tag: Tag) extends Table[Event](tag, "event") {
   def to = column[Option[Long]]("to")
 
   def background = column[Option[Boolean]]("background")
+  def color = column[Option[String]]("color")
 
   def groupId = column[Int]("event_group_id")
   def group = foreignKey("event_group_id", groupId, Groups)(_.id)
 
-  override def * = (id, eventName, from, to, groupId, background) <> (Event.tupled, Event.unapply)
+  override def * = (id, eventName, from, to, groupId, background, color) <> (Event.tupled, Event.unapply)
 }

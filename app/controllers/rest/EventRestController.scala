@@ -90,7 +90,7 @@ class EventRestController @Inject()(eventDAO: EventDAO) extends Controller with 
 
   def tuple2ToList[T](t: (T,T)): List[T] = List(t._1, t._2)
 
-  def serializeList = Action.async(BodyParsers.parse.json) { request =>
+  /* def serializeList = Action.async(BodyParsers.parse.json) { request =>
     val events = request.body.validate[List[Event]]
 
     events.fold(
@@ -102,7 +102,7 @@ class EventRestController @Inject()(eventDAO: EventDAO) extends Controller with 
         val ids = success.map {
           event => {
             val toCannotBeNull: Event = event.to match {
-              case None => Event(event.id, event.eventName, event.from, Some(0), event.groupId, event.background)
+              case None => Event(event.id, event.eventName, event.from, Some(0), event.groupId, event.background, )
               case Some(long) => event
             }
             eventDAO.addEvent(toCannotBeNull)
@@ -120,13 +120,13 @@ class EventRestController @Inject()(eventDAO: EventDAO) extends Controller with 
       }
     )
 
-  }
+  } */
 
-  def serializeListOptions = Action { request =>
+  def serializeListOptions(eventId: Int) = Action { request =>
 
     Ok("").withHeaders(
       "Access-Control-Allow-Origin" -> "*",
-      "Access-Control-Allow-Methods" -> "GET, POST, OPTIONS",
+      "Access-Control-Allow-Methods" -> "GET, POST, OPTIONS, DELETE",
       "Access-Control-Allow-Headers" -> "Accept, Origin, Content-type, X-Json, X-Prototype-Version, X-Requested-With",
       "Access-Control-Allow-Credentials" -> "true",
       "Access-Control-Max-Age" -> (60 * 60 * 24).toString
@@ -134,11 +134,25 @@ class EventRestController @Inject()(eventDAO: EventDAO) extends Controller with 
 
   }
 
+  def serializeListOptionsTwo() = Action { request =>
+
+    Ok("").withHeaders(
+      "Access-Control-Allow-Origin" -> "*",
+      "Access-Control-Allow-Methods" -> "GET, POST, OPTIONS, DELETE",
+      "Access-Control-Allow-Headers" -> "Accept, Origin, Content-type, X-Json, X-Prototype-Version, X-Requested-With",
+      "Access-Control-Allow-Credentials" -> "true",
+      "Access-Control-Max-Age" -> (60 * 60 * 24).toString
+    )
+
+  }
+
+
+
   private def toFailureJson(message: String): Result = {
     BadRequest(Json.obj("status" -> "KO", "message" -> (message)))
   }
 
-  implicit val dbEventWrites = new Writes[Event] {
+  /* implicit val dbEventWrites = new Writes[Event] {
     def writes(event: Event) = {
 
       val to: Long = event.to match {
@@ -155,7 +169,7 @@ class EventRestController @Inject()(eventDAO: EventDAO) extends Controller with 
         "background" -> event.background
       )
     }
-  }
+  } */
 
   def allEvents() = Action.async {
     eventDAO.allEvents.map {
@@ -211,7 +225,13 @@ class EventRestController @Inject()(eventDAO: EventDAO) extends Controller with 
         }
 
       })
+  }
 
+  def deleteEvent(eventId: Int) = Action.async {
+    eventDAO.deleteEvent(eventId).map {
+      case Some(_) => NoContent
+      case None => NotFound
+    }
   }
 }
 
