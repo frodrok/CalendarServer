@@ -1,65 +1,69 @@
 import javax.inject.Inject
 
 import `trait`.EventJsonHandler
-import dao.EventDAO
+import dao.{EventDAO, UserDAO}
 import model.Event
 import org.joda.time.DateTime
+import org.scalatest.BeforeAndAfter
 import org.scalatestplus.play._
-import play.api.Logger
+import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
-import play.api.test._
 import play.api.test.Helpers._
-import slick.lifted.TableQuery
+import play.api.test._
+import play.api.{Configuration, Logger, Mode}
+
+import scala.concurrent.ExecutionContext.Implicits.global
 
 /**
  * Add your spec here.
  * You can mock out a whole application including requests, plugins etc.
  * For more information, consult the wiki.
  */
-class ApplicationSpec extends PlaySpec with OneAppPerTest with EventJsonHandler {
+class ApplicationSpec @Inject()(eventDAO: EventDAO) extends PlaySpec with OneAppPerTest with EventJsonHandler {
+
+  implicit val eventReads = getReads
+  implicit val eventWrites = getWrites
+
+  def testApp = new GuiceApplicationBuilder()
+    .configure(
+      Configuration.from(
+        Map(
+          "slick.dbs.msql.driver" -> "slick.driver.H2Driver$",
+          "slick.dbs.msql.db.driver" -> "org.h2.Driver",
+          "slick.dbs.msql.db.url" -> "jdbc:h2:mem:playnow",
+
+          "slick.dbs.default.driver" -> "slick.driver.MySQLDriver$",
+          "slick.dbs.default.db.driver" -> "com.mysql.jdbc.Driver"
+        )
+      )
+    )
+    .in(Mode.Test)
+    .build()
 
   "Routes" should {
 
-    "send 404 on a bad request" in  {
+    "send 404 on a bad request" in {
       route(app, FakeRequest(GET, "/boum")).map(status(_)) mustBe Some(NOT_FOUND)
     }
 
   }
 
-  "Event REST postable" should {
+/*   "Event REST postable" should {
     "be postable" in {
-      running(FakeApplication(additionalConfiguration = inMemoryDatabase())) {
-        val from = DateTime.now
-        val to = from.plusDays(1)
 
-        val event: Event = Event(None, "hey now", from.getMillis, Some(to.getMillis), 1, None)
+      val from = DateTime.now
+      val to = DateTime.now().plusDays(1)
 
-        val jsonEvent = Json.toJson(event)
+      val event: Event = Event(None, "hey now", from.getMillis, Some(to.getMillis), 1, None)
 
-        // contentAsString(route(app, FakeRequest(GET, "/events")).get) mustBe "0"
-        /* contentAsString(route(app, FakeRequest(
-          POST,
-          "/events",
-          FakeHeaders(Seq("Content-Type" -> "application/json")),
-          jsonEvent
-        ))) */
-        val wat = route(app, FakeRequest(
-          POST,
-          "/events",
-          FakeHeaders(Seq("Content-Type" -> "application/json")),
-          jsonEvent
-        )).get
+      val jsonEvent = Json.toJson(event)
 
-        // Logger.debug(wat)
+      route(app, FakeRequest(POST,
+        "/events",
+        FakeHeaders(Seq("Content-Type" -> "application/json")),
+        jsonEvent
+      )).map(status(_)) mustBe OK
 
-        // status(wat) mustBe equalTo(OK)
-        status(wat) mustBe equal(OK)
-
-      }
     }
-  }
-  implicit val eventReads = getReads
-  implicit val eventWrites = getWrites
-
-
+  } */
 }

@@ -17,4 +17,12 @@ class IntegrationSpec extends PlaySpec with OneServerPerTest with OneBrowserPerT
       pageSource must include ("Register")
     }
   }
+
+  "Routes" should {
+
+    "send 404 on a bad request" in {
+      route(app, FakeRequest(GET, "/boum")).map(status(_)) mustBe Some(NOT_FOUND)
+    }
+
+  }
 }

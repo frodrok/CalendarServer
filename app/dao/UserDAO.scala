@@ -23,13 +23,6 @@ class UserDAO @Inject()(@NamedDatabase("msql") val dbConfigProvider: DatabaseCon
   private val Events = TableQuery[EventsTable]
 
   def setup() {
-    /* db.run(DBIO.seq(
-      Events.schema.drop,
-      Groups.schema.drop,
-      Events.schema.drop
-    )).onFailure{ case ex => println(ex) }
-    droppa manuellt istället */
-
     db.run(DBIO.seq(
       Groups.schema.create
     )).onFailure{ case ex => Logger.debug(s"error in dbSetup groups: $ex.getMessage") }

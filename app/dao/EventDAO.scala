@@ -4,6 +4,7 @@ import javax.inject.Inject
 
 import com.mysql.jdbc.exceptions.jdbc4.MySQLDataException
 import model._
+import play.api.Logger
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import play.db.NamedDatabase
 import slick.driver.JdbcProfile
@@ -16,6 +17,7 @@ import scala.util.{Failure, Success, Try}
 
 
 class EventDAO @Inject()(@NamedDatabase("msql") val dbConfigProvider: DatabaseConfigProvider, userDAO: UserDAO) extends HasDatabaseConfigProvider[JdbcProfile] {
+//class EventDAO @Inject()(val dbConfigProvider: DatabaseConfigProvider, userDAO: UserDAO) extends HasDatabaseConfigProvider[JdbcProfile] {
 
   import driver.api._
 
@@ -27,16 +29,19 @@ class EventDAO @Inject()(@NamedDatabase("msql") val dbConfigProvider: DatabaseCo
 
   def addEvent(event: Event): Future[Option[Int]] = {
     db.run(
-      ((Events returning Events.map(_.id)) += event)
+      (Events returning Events.map(_.id)) += event
     )
   }
 
-  def updateEvent(retrievedEvent: Event): Future[Int] = db.run {
-    /* investigate whentf exception happens?? */
-    Events.filter(_.id === retrievedEvent.id).update(retrievedEvent).map {
-      case 0 => throw new MySQLDataException("Could could not update wadafaka is this, L:36 in EventDAO")
-      case _ => retrievedEvent.id.get
-    }
+  def updateEvent(retrievedEvent: Event): Future[Option[Int]] = {
+    db.run(
+      Events.filter(_.id === retrievedEvent.id).update(retrievedEvent).map {
+        case 0 => None
+        case 1 => {
+          retrievedEvent.id
+        }
+      }
+    )
   }
 
   def getEventById(eventId: Int): Future[Option[Event]] = {

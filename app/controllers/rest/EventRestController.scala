@@ -2,59 +2,68 @@ package controllers.rest
 
 import javax.inject.Inject
 
-import scala.concurrent.duration._
+import `trait`.EventJsonHandler
 import com.mysql.jdbc.exceptions.jdbc4.MySQLIntegrityConstraintViolationException
-import controllers.rest.restmodel.{JsonEvent, JsonUser}
 import dao.EventDAO
 import model.{Event, EventNotFoundException, UserHasNoGroupException, UserNotFoundException}
-import org.joda.time.DateTime
 import play.api.Logger
 import play.api.libs.json._
 import play.api.mvc._
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.util.{Failure, Success}
-import play.api.libs.functional.syntax._
-
 import scala.concurrent.{Await, Future}
+import scala.concurrent.duration._
 
-class EventRestController @Inject()(eventDAO: EventDAO) extends Controller {
+class EventRestController @Inject()(eventDAO: EventDAO) extends Controller with EventJsonHandler {
 
   /* refactor to jsonHeaders for seriousness */
   val effinHeaders = "Content-Type" -> "application/json; charset=utf-8"
 
-  implicit val eventWrites = new Writes[JsonEvent] {
-    def writes(event: JsonEvent) = {
-
-      val toAsString: String = event.to match {
-        case Some(date) => date
-        case None => "None"
-      }
-
-      Json.obj(
-        "id" -> event.id,
-        "title" -> event.eventName,
-        "from" -> event.from.toString,
-        "to" -> toAsString,
-        "groupId" -> event.groupId
-      )
-    }
-  }
-
-  implicit val eventReads: Reads[JsonEvent] = (
-    (JsPath \ "id").readNullable[Int] and
-      (JsPath \ "title").read[String] and
-      (JsPath \ "from").read[String] and
-      (JsPath \ "to").readNullable[String] and
-      (JsPath \ "groupId").read[Int]
-    ) (JsonEvent.apply _)
+  implicit val eventReads: Reads[Event] = getReads
+  implicit val eventWrites: Writes[Event] = getWrites
 
   def addEvent() = Action.async(BodyParsers.parse.json) { request =>
     val eventResult = request.body.validate[Event]
 
     eventResult.fold(
       errors => {
-        Future(BadRequest(Json.obj("status" -> "KO", "message" -> JsError.toJson(errors))))
+
+        /* if it couldn't validate for event perhaps it's a list */
+        val listResult = request.body.validate[List[Event]]
+
+        listResult.fold(
+          errors => {
+            Future(BadRequest(Json.obj("status" -> "KOL", "message" -> JsError.toJson(errors))))
+          },
+          success => {
+
+            /* update the ones who have id, create the ones who do not */
+            val toCreate: List[Event] = success.filterNot(event => event.id.isDefined)
+            val toUpdate: List[Event] = success.filter(event => event.id.isDefined)
+
+            val createIds = toCreate.map {
+              event => eventDAO.addEvent(event)
+            }
+
+            val updateIds = toUpdate.map {
+              event => eventDAO.updateEvent(event)
+            }
+
+            val flatCreateIds = Future.sequence(createIds).map(_.flatten)
+            val flatUpdateIds = Future.sequence(updateIds).map(_.flatten)
+
+            val allIds = flatCreateIds.zip(flatUpdateIds).map {
+              ids => tuple2ToList(ids).flatten
+            }
+
+            allIds.map {
+              list => Created(Json.toJson(list))
+            }
+
+          }
+        )
+
+        // Future(BadRequest(Json.obj("status" -> "KO", "message" -> JsError.toJson(errors))))
       },
       event => {
 
@@ -79,15 +88,7 @@ class EventRestController @Inject()(eventDAO: EventDAO) extends Controller {
     )
   }
 
-  implicit val dbEventReads: Reads[Event] = (
-    (JsPath \ "id").readNullable[Int] and
-      (JsPath \ "title").read[String] and
-      (JsPath \ "from").read[Long] and
-      (JsPath \ "to").readNullable[Long] and
-      (JsPath \ "groupId").read[Int] and
-      (JsPath \ "background").readNullable[Boolean]
-    ) (Event.apply _)
-
+  def tuple2ToList[T](t: (T,T)): List[T] = List(t._1, t._2)
 
   def serializeList = Action.async(BodyParsers.parse.json) { request =>
     val events = request.body.validate[List[Event]]
