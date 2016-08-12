@@ -95,7 +95,7 @@ class EventRestTest extends PlaySpec with OneAppPerTest with EventJsonHandler wi
         "/events",
         FakeHeaders(Seq("Content-Type" -> "application/json")),
         createEvents
-      )).map{
+      )).map {
         event => {
           val jsValue = Json.parse(contentAsString(event))
 
@@ -120,10 +120,10 @@ class EventRestTest extends PlaySpec with OneAppPerTest with EventJsonHandler wi
       val jsonEvents = Json.toJson(listOfEventsToUpdate ++ nevents)
 
       route(testApp, FakeRequest(POST,
-          "/events",
+        "/events",
         FakeHeaders(Seq("Content-Type" -> "application/json")),
         jsonEvents
-      )).map{
+      )).map {
         event => {
           val jsValue = Json.parse(contentAsString(event))
           val list: List[Int] = jsValue.validate[List[Int]].fold(
@@ -146,8 +146,6 @@ class EventRestTest extends PlaySpec with OneAppPerTest with EventJsonHandler wi
         response => {
           headerLocation = header("Location", response)
 
-          Logger.debug(contentAsString(response))
-
           val fknString: String = headerLocation.get takeRight 2
           val watId: Int = Integer.parseInt(fknString)
 
@@ -155,14 +153,12 @@ class EventRestTest extends PlaySpec with OneAppPerTest with EventJsonHandler wi
         }
       }
 
-      Logger.debug(fknId.get.toString)
-
       fknId must not be 0
 
       route(testApp, FakeRequest(DELETE,
-        "/events/" + fknId)).map(status) mustBe Some(NO_CONTENT)
+        "/events/" + fknId.get)).map(status) mustBe Some(NO_CONTENT)
     }
-
   }
+
 
 }
