@@ -1,0 +1,77 @@
+# Routes
+# This file defines all application routes (Higher priority routes first)
+# ~~~~
+
+# An example controller showing a sample home page
+# An example controller showing how to use dependency injection
+GET     /count                      controllers.CountController.count
+# An example controller showing how to write asynchronous code
+GET     /message                    controllers.AsyncController.message
+
+# Map static resources from the /public folder to the /assets URL path
+GET     /assets/*file               controllers.Assets.versioned(path="/public", file: Asset)
+
+GET /           controllers.BaseController.index
+GET /setup      controllers.BaseController.setup
+
+GET /test       controllers.BaseController.test
+
+# An example controller showing how to use dependency injection
+GET     /count                      controllers.CountController.count
+# An example controller showing how to write asynchronous code
+GET     /message                    controllers.AsyncController.message
+
+# Map static resources from the /public folder to the /assets URL path
+GET     /assets/*file               controllers.Assets.versioned(path="/public", file: Asset)
+
+POST /register  controllers.BaseController.register
+POST /login  controllers.BaseController.login
+
+#user page
+GET /user           controllers.UserController.userPage
+GET /user/logout    controllers.UserController.logout
+POST /user/addEvent controllers.UserController.addEvent
+POST /user/setGroup controllers.UserController.setGroup
+
+#events
+#GET     /user/:userId/events    controllers.UserController.eventsForUserJson(userId: Int)
+#POST    /user/:userId/newevent  controllers.UserController.saveEvent(userId: Int)
+
+#### end client part ####
+#### server part ####
+
+## user ##
+GET /users                  controllers.rest.UserRestController.allUsers()
+GET /users/:userId              controllers.rest.UserRestController.getUser(userId: Int)
+GET /users/username/:username   controllers.rest.UserRestController.getUserByUsername(username: String)
+
+POST /users                 controllers.rest.UserRestController.register()
+PUT /users/:userId           controllers.rest.UserRestController.update(userId: Int)
+
+GET /validateuser     controllers.rest.UserRestController.login()
+
+## event ##
+GET /events                 controllers.rest.EventRestController.allEvents()
+GET /users/:userId/events    controllers.rest.EventRestController.eventsForUserJson(userId: Int)
+GET /events/:eventId        controllers.rest.EventRestController.getEvent(eventId: Int)
+
+PUT /events/:eventId        controllers.rest.EventRestController.updateEvent(eventId: Int)
+DELETE /events/:eventId     controllers.rest.EventRestController.deleteEvent(eventId: Int)
+
+POST /events                controllers.rest.EventRestController.addEvent()
+
+## temporary route for testing of list serialization
+OPTIONS /events             controllers.rest.EventRestController.serializeListOptionsTwo()
+OPTIONS /events/:eventId    controllers.rest.EventRestController.serializeListOptions(eventId: Int)
+
+## group ##
+GET /groups             controllers.rest.GroupRestController.allGroups()
+GET /groups/:groupId    controllers.rest.GroupRestController.getGroup(groupId: Int)
+GET /groups/groupname/:groupName    controllers.rest.GroupRestController.getGroupByName(groupName: String)
+
+POST /groups            controllers.rest.GroupRestController.addGroup()
+PUT /groups/:groupId             controllers.rest.GroupRestController.updateGroup(groupId: Int)
+# instead of DELETE you put and set active to false mafaka
+
+## all users for a group
+GET /groups/:groupId/users controllers.rest.UserRestController.allUsersForGroup(groupId: Int)
