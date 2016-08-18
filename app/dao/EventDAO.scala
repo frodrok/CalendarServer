@@ -2,17 +2,13 @@ package dao
 
 import javax.inject.Inject
 
-import com.mysql.jdbc.exceptions.jdbc4.MySQLDataException
 import model._
-import play.api.Logger
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import play.db.NamedDatabase
 import slick.driver.JdbcProfile
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{Await, Future}
-import scala.concurrent.duration._
-import scala.util.{Failure, Success, Try}
+import scala.concurrent.Future
 
 
 

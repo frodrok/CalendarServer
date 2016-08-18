@@ -1,9 +1,10 @@
 package controllers.rest.restmodel
 
 import model.Group
-import org.joda.time.DateTime
 
-case class JsonUser(id: Option[Int], username: String, password: String, admin: Option[Boolean], groupId: Option[Int])
+case class JsonUser(id: Option[Int], username: String, password: String, admin: Option[Boolean], groupId: Option[Int],
+                    superAdmin: Option[Boolean],
+                    licenseId: Option[Int])
 case class JsonGroup(id: Option[Int], groupName: String, active: Option[Boolean]) {
 
   def toDbGroup: Group = {

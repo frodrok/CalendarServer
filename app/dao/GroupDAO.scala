@@ -20,9 +20,9 @@ class GroupDAO @Inject()(@NamedDatabase("msql") val dbConfigProvider: DatabaseCo
   private val Users = TableQuery[UsersTable]
   private val Groups = TableQuery[GroupsTable]
 
-  def addGroup(group: Group): Future[Try[Int]] = {
+  def addGroup(group: Group): Future[Int] = {
     db.run(
-      (Groups returning Groups.map(_.id) += group).asTry
+      (Groups returning Groups.map(_.id)) += group
     )
   }
 

@@ -90,60 +90,27 @@ class EventRestController @Inject()(eventDAO: EventDAO) extends Controller with 
 
   def tuple2ToList[T](t: (T,T)): List[T] = List(t._1, t._2)
 
-  /* def serializeList = Action.async(BodyParsers.parse.json) { request =>
-    val events = request.body.validate[List[Event]]
+  def serializeListOptions(eventId: Int) = getOptions()
+  def serializeListOptionsTwo() = getOptions()
 
-    events.fold(
-      errors => {
-        Future(BadRequest(Json.obj("status" -> "KO", "message" -> JsError.toJson(errors))))
-      },
-      success => {
+  def serializeListOptionsThree() = getOptions()
+  def serializeListOptionsFour(licenseId: Int) = getOptions()
+  def serializeListOptionsFive(licenseId: Int) = getOptions()
+  def serializeListOptionsSix(groupId: Int) = getOptions()
+  def serializeListOptionsSeven() = getOptions()
+  def serializeListOptionsEight(userId: Int) = getOptions()
+  def serializeListOptionsNine() = getOptions()
 
-        val ids = success.map {
-          event => {
-            val toCannotBeNull: Event = event.to match {
-              case None => Event(event.id, event.eventName, event.from, Some(0), event.groupId, event.background, )
-              case Some(long) => event
-            }
-            eventDAO.addEvent(toCannotBeNull)
-          }
-        }
 
-        Future.sequence(ids).map(_.flatten).map {
-          list => Ok(Json.toJson(list))
-        } recover {
-          case ex: Exception => {
-            Logger.error(ex.toString)
-            toFailureJson(ex.getMessage)
-          }
-        }
-      }
-    )
 
-  } */
-
-  def serializeListOptions(eventId: Int) = Action { request =>
-
+  def getOptions() = Action {
     Ok("").withHeaders(
-      "Access-Control-Allow-Origin" -> "*",
-      "Access-Control-Allow-Methods" -> "GET, POST, OPTIONS, DELETE",
-      "Access-Control-Allow-Headers" -> "Accept, Origin, Content-type, X-Json, X-Prototype-Version, X-Requested-With",
-      "Access-Control-Allow-Credentials" -> "true",
-      "Access-Control-Max-Age" -> (60 * 60 * 24).toString
+    "Access-Control-Allow-Origin" -> "*",
+    "Access-Control-Allow-Methods" -> "GET, POST, OPTIONS, DELETE, PUT",
+    "Access-Control-Allow-Headers" -> "Accept, Origin, Content-type, X-Json, X-Prototype-Version, X-Requested-With",
+    "Access-Control-Allow-Credentials" -> "true",
+    "Access-Control-Max-Age" -> (60 * 60 * 24).toString
     )
-
-  }
-
-  def serializeListOptionsTwo() = Action { request =>
-
-    Ok("").withHeaders(
-      "Access-Control-Allow-Origin" -> "*",
-      "Access-Control-Allow-Methods" -> "GET, POST, OPTIONS, DELETE",
-      "Access-Control-Allow-Headers" -> "Accept, Origin, Content-type, X-Json, X-Prototype-Version, X-Requested-With",
-      "Access-Control-Allow-Credentials" -> "true",
-      "Access-Control-Max-Age" -> (60 * 60 * 24).toString
-    )
-
   }
 
 
@@ -185,7 +152,8 @@ class EventRestController @Inject()(eventDAO: EventDAO) extends Controller with 
     eventDAO.getEventsForUser(userId).map {
       events => Ok(Json.toJson(events)).withHeaders(effinHeaders)
     } recover {
-      case e: UserHasNoGroupException => toFailureJson("User has no group")
+//      case e: UserHasNoGroupException => toFailureJson("User has no group")
+      case e: UserHasNoGroupException => NotFound("User has no group")
       case e: UserNotFoundException => NotFound
       case e: Exception => toFailureJson(e.getMessage)
     }

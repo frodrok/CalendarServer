@@ -5,15 +5,21 @@ import slick.driver.MySQLDriver.api._
 class UsersTable(tag: Tag) extends Table[User](tag, "user") {
 
   val Groups = TableQuery[GroupsTable]
+  val Licenses = TableQuery[LicenseTable]
+
   def id = column[Long]("id", O.PrimaryKey, O.AutoInc)
   def username = column[String]("username", O.SqlType("VARCHAR(100)"))
   def password = column[String]("password")
   def admin = column[Option[Boolean]]("isadmin")
+  def superAdmin = column[Option[Boolean]]("superadmin")
 
   def groupId = column[Option[Int]]("user_group_id")
-  def group = foreignKey("user_group_id", groupId, Groups)(_.id)
+  def group = foreignKey("user_group_id", groupId, Groups)(_.id.?)
 
-  override def * = (id, username, password, admin, groupId) <> (User.tupled, User.unapply)
+  def licenseId = column[Option[Int]]("user_license_id")
+  def license = foreignKey("user_license_id", licenseId, Licenses)(_.id)
+
+  override def * = (id, username, password, admin, groupId, superAdmin, licenseId) <> (User.tupled, User.unapply)
 
   def idxUsername = index("idx_username", username, unique = true)
 }
@@ -45,4 +51,12 @@ class EventsTable(tag: Tag) extends Table[Event](tag, "event") {
   def group = foreignKey("event_group_id", groupId, Groups)(_.id)
 
   override def * = (id, eventName, from, to, groupId, background, color) <> (Event.tupled, Event.unapply)
+}
+
+class LicenseTable(tag: Tag) extends Table[License](tag, "license") {
+
+  def id = column[Option[Int]]("id", O.PrimaryKey, O.AutoInc)
+  def companyName = column[String]("companyName")
+
+  override def * = (id, companyName) <> (License.tupled, License.unapply)
 }

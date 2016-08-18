@@ -1,6 +1,5 @@
 package controllers.rest.restmodel
 
-import model.Event
 import org.joda.time.DateTime
 
 /**

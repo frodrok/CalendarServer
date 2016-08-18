@@ -30,7 +30,7 @@ class Filters @Inject() (env: Environment,
     // we're running in production or test mode then don't use any
     // filters at all.
     //if (env.mode == Mode.Dev) Seq(exampleFilter) else Seq.empty
-    Seq(accessControll)
+    Seq.apply(accessControll)
 
   }
 
@@ -47,7 +47,13 @@ class AccessControll @Inject()(
     // and eventually call the action. Take the result and modify it
     // by adding a new header.
     nextFilter(requestHeader).map { result =>
-      result.withHeaders("Access-Control-Allow-Origin" -> "*")
+      result.withHeaders(
+        "Access-Control-Allow-Origin" -> "*",
+        "Access-Control-Allow-Methods" -> "GET, POST, OPTIONS, DELETE",
+        "Access-Control-Allow-Headers" -> "Accept, Origin, Content-type, X-Json, X-Prototype-Version, X-Requested-With",
+        "Access-Control-Allow-Credentials" -> "true",
+        "Access-Control-Max-Age" -> (60 * 60 * 24).toString
+      )
     }
   }
 

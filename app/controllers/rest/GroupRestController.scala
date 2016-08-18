@@ -44,24 +44,26 @@ class GroupRestController @Inject()(groupDao: GroupDAO) extends Controller {
 
         val dbGroup = group.toDbGroup
 
-        groupDao.addGroup(dbGroup).map {
-          result => {
-            result match {
-              case Success(res) => {
-                Logger.debug("Added event: " + group.groupName)
-                Created.withHeaders("Location" -> ("/groups/" + res))
-              }
-              case Failure(e: MySQLIntegrityConstraintViolationException) => {
-                toFailureJson("Group needs to have a groupId")
-              }
-              case Failure(e: Exception) => {
-                Logger.error(e.toString)
-                toFailureJson(e.getMessage)
-              }
-            }
+        val result = groupDao.addGroup(dbGroup)
+
+        result.map {
+          case result => {
+            Logger.debug("Added group: " + group.groupName)
+            Created.withHeaders("Location" -> ("/groups/" + result))
+          }
+        } recover {
+          case ex: MySQLIntegrityConstraintViolationException => {
+            toFailureJson("Group needs to have a groupId")
+          }
+          case ex: Exception => {
+            Logger.error(ex.toString)
+            toFailureJson(ex.getMessage)
           }
         }
+
       }
+
+
     )
   }
 

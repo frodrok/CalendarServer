@@ -14,16 +14,16 @@ scalacOptions ++= Seq(
   "-language:higherKinds",
   "-language:implicitConversions",
   "-unchecked",
-  "-Xfatal-warnings",
-  "-Xlint",
+  "-Xfatal-warnings"
+  /* "-Xlint",
   "-Yno-adapted-args",
   "-Ywarn-dead-code",        // N.B. doesn't work well with the ??? hole
-  "-Ywarn-numeric-widen",
+  // "-Ywarn-numeric-widen",
   "-Ywarn-value-discard",
   "-Xfuture",
-  "-Ywarn-unused-import",     // 2.11 only
-  "-Yno-predef",   // no automatic import of Predef (removes irritating implicits)
-  "-Yno-imports"  // no automatic imports at all; all symbols must be imported explicitly
+  "-Ywarn-unused-import"     // 2.11 only
+  // "-Yno-predef"   // no automatic import of Predef (removes irritating implicits)
+  //"-Yno-imports"  // no automatic imports at all; all symbols must be imported explicitly */
 )
 
 libraryDependencies ++= Seq(

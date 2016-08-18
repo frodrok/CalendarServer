@@ -3,27 +3,18 @@
 package controllers.rest
 
 import javax.inject.Inject
-import javax.inject.Inject
 
 import com.mysql.jdbc.exceptions.jdbc4.MySQLIntegrityConstraintViolationException
 import controllers.rest.restmodel.JsonUser
-import model.{User, UserHasNoGroupException, UserNotFoundException}
 import dao.UserDAO
-import org.joda.time.DateTime
+import model.{User, UserNotFoundException}
 import play.api.Logger
-import play.api.data.Form
-import play.api.data.Forms._
-import play.api.i18n.{I18nSupport, MessagesApi}
-import play.api.mvc.{Action, BodyParsers, Controller, Result}
+import play.api.libs.functional.syntax._
+import play.api.libs.json._
+import play.api.mvc.{Action, BodyParsers, Controller}
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Future}
-import play.api.libs.json._
-import play.api.i18n.Messages.Implicits._
-import play.api.libs.functional.syntax._
-
-import scala.concurrent.duration._
+import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
 class UserRestController @Inject()(userDao: UserDAO) extends Controller {
@@ -33,10 +24,10 @@ class UserRestController @Inject()(userDao: UserDAO) extends Controller {
     (JsPath \ "username").read[String] and
       (JsPath \ "password").read[String] and
       (JsPath \ "admin").readNullable[Boolean] and
-      (JsPath \ "groupId").readNullable[Int]
+      (JsPath \ "groupId").readNullable[Int] and
+        (JsPath \ "superAdmin").readNullable[Boolean] and
+          (JsPath \ "licenseId").readNullable[Int]
     )(JsonUser.apply _)
-
-
 
    implicit val userWrites = new Writes[JsonUser] {
       def writes(user: JsonUser) = Json.obj(
@@ -44,12 +35,14 @@ class UserRestController @Inject()(userDao: UserDAO) extends Controller {
         "username" -> user.username,
         "password" -> user.password,
         "admin" -> user.admin,
-        "groupId" -> user.groupId
+        "groupId" -> user.groupId,
+        "superAdmin" -> user.superAdmin,
+        "licenseId" -> user.licenseId
       )
     }
 
   private def userToJsonUser(user: User): JsonUser = {
-    JsonUser(Some(user.id.toInt), user.username, user.password, user.admin, user.groupId)
+    JsonUser(Some(user.id.toInt), user.username, user.password, user.admin, user.groupId, user.superAdmin, user.licenseId)
   }
 
   def getUser(userId: Int) = Action.async { implicit request =>
@@ -80,20 +73,6 @@ class UserRestController @Inject()(userDao: UserDAO) extends Controller {
     }
   }
 
-
-  // old method
-    /* val userOption = Await.result(userDao.getUserById(userId), 3.seconds)
-
-    val jsonUserOption = userOption.map {
-      user => Some(JsonUser(Some(user.id.toInt), user.username, user.password, user.admin, user.groupId))
-    }
-
-    jsonUserOption match {
-      case Some(user) => Ok(Json.toJson(user))
-      case None => NotFound
-    }
-  } */
-
   def login = Action.async(BodyParsers.parse.json) { request =>
     val userResult = request.body.validate[JsonUser]
 
@@ -102,7 +81,7 @@ class UserRestController @Inject()(userDao: UserDAO) extends Controller {
         Future(BadRequest(Json.obj("status" -> "KO", "message" -> JsError.toJson(errors))))
       },
       user => {
-        val temp = User(0, user.username, user.password)
+        val temp = User(0, user.username, user.password, superAdmin = user.superAdmin)
 
         userDao.getUserByUsername(temp.username).map {
 
@@ -134,7 +113,7 @@ class UserRestController @Inject()(userDao: UserDAO) extends Controller {
     userDao.allUsers.map {
       user => {
         val asJsonUsers = user.seq.map {
-          user => JsonUser(Some(user.id.toInt), user.username, user.password, user.admin, user.groupId)
+          user => JsonUser(Some(user.id.toInt), user.username, user.password, user.admin, user.groupId, user.superAdmin, user.licenseId)
         }
         val asJsonData = Json.toJson(asJsonUsers)
         Ok(asJsonData)
@@ -149,25 +128,22 @@ class UserRestController @Inject()(userDao: UserDAO) extends Controller {
         Future(BadRequest(Json.obj("status" -> "KO", "message" -> JsError.toJson(errors))))
       },
       user => {
-        val userToDb = User(0, user.username, user.password, user.admin, user.groupId)
+        val userToDb = User(0, user.username, user.password, user.admin, user.groupId, user.superAdmin, user.licenseId)
 
         userDao.add(userToDb).map {
           result => {
-            result match {
-              case Success(res) => {
-                Logger.debug("Added user " + user.username)
+            Logger.debug("Added user: " + user.username)
 
-                Created.withHeaders("Location" -> ("/user/" + res))
-              }
-              case Failure(e: MySQLIntegrityConstraintViolationException) => {
-                // BadRequest(Json.obj("status" -> "KO", "message" -> ("Username already exists, use update instead")))
-                Conflict
-              }
-              case Failure(e: Exception) => {
-                Logger.error(e.toString)
-                BadRequest(Json.obj("status" -> "KO", "message" -> e.getMessage))
-              }
-            }
+            Created.withHeaders("Location" -> ("/users/" + result))
+          }
+        } recover {
+          case e: MySQLIntegrityConstraintViolationException => {
+            // BadRequest(Json.obj("status" -> "KO", "message" -> ("Username already exists, use update instead")))
+            Conflict
+          }
+          case e: Exception => {
+            Logger.error(e.toString)
+            BadRequest(Json.obj("status" -> "KO", "message" -> e.getMessage))
           }
         }
 
@@ -190,7 +166,7 @@ class UserRestController @Inject()(userDao: UserDAO) extends Controller {
         Future(BadRequest(Json.obj("status" -> "KO", "message" -> JsError.toJson(errors))))
       },
       user => {
-        val userToDb = User(user.id.get, user.username, user.password, user.admin, user.groupId)
+        val userToDb = User(user.id.get, user.username, user.password, user.admin, user.groupId, user.superAdmin, user.licenseId)
 
         userDao.updateUser(userToDb).map {
           result => result match {
@@ -199,6 +175,7 @@ class UserRestController @Inject()(userDao: UserDAO) extends Controller {
           }
         } recover {
           case e: UserNotFoundException => NotFound
+          case e: MySQLIntegrityConstraintViolationException => Conflict
           case e: Exception => {
             Logger.debug("fallthrough [UserREstController.update")
             InternalServerError(e.getMessage)

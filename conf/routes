@@ -2,42 +2,9 @@
 # This file defines all application routes (Higher priority routes first)
 # ~~~~
 
-# An example controller showing a sample home page
-# An example controller showing how to use dependency injection
-GET     /count                      controllers.CountController.count
-# An example controller showing how to write asynchronous code
-GET     /message                    controllers.AsyncController.message
-
 # Map static resources from the /public folder to the /assets URL path
 GET     /assets/*file               controllers.Assets.versioned(path="/public", file: Asset)
 
-GET /           controllers.BaseController.index
-GET /setup      controllers.BaseController.setup
-
-GET /test       controllers.BaseController.test
-
-# An example controller showing how to use dependency injection
-GET     /count                      controllers.CountController.count
-# An example controller showing how to write asynchronous code
-GET     /message                    controllers.AsyncController.message
-
-# Map static resources from the /public folder to the /assets URL path
-GET     /assets/*file               controllers.Assets.versioned(path="/public", file: Asset)
-
-POST /register  controllers.BaseController.register
-POST /login  controllers.BaseController.login
-
-#user page
-GET /user           controllers.UserController.userPage
-GET /user/logout    controllers.UserController.logout
-POST /user/addEvent controllers.UserController.addEvent
-POST /user/setGroup controllers.UserController.setGroup
-
-#events
-#GET     /user/:userId/events    controllers.UserController.eventsForUserJson(userId: Int)
-#POST    /user/:userId/newevent  controllers.UserController.saveEvent(userId: Int)
-
-#### end client part ####
 #### server part ####
 
 ## user ##
@@ -61,8 +28,21 @@ DELETE /events/:eventId     controllers.rest.EventRestController.deleteEvent(eve
 POST /events                controllers.rest.EventRestController.addEvent()
 
 ## temporary route for testing of list serialization
+#uuuh options
 OPTIONS /events             controllers.rest.EventRestController.serializeListOptionsTwo()
 OPTIONS /events/:eventId    controllers.rest.EventRestController.serializeListOptions(eventId: Int)
+
+OPTIONS /groups/:groupId    controllers.rest.EventRestController.serializeListOptionsSix(groupId: Int)
+OPTIONS /groups    controllers.rest.EventRestController.serializeListOptionsSeven()
+
+
+OPTIONS /licenses/:licenseId controllers.rest.EventRestController.serializeListOptionsFour(licenseId: Int)
+OPTIONS /licenses          controllers.rest.EventRestController.serializeListOptionsThree()
+OPTIONS /licenses/:licenseId/admins controllers.rest.EventRestController.serializeListOptionsFive(licenseId: Int)
+
+OPTIONS /users/:userId  controllers.rest.EventRestController.serializeListOptionsEight(userId: Int)
+OPTIONS /users          controllers.rest.EventRestController.serializeListOptionsNine()
+
 
 ## group ##
 GET /groups             controllers.rest.GroupRestController.allGroups()
@@ -75,3 +55,13 @@ PUT /groups/:groupId             controllers.rest.GroupRestController.updateGrou
 
 ## all users for a group
 GET /groups/:groupId/users controllers.rest.UserRestController.allUsersForGroup(groupId: Int)
+
+POST /licenses  controllers.rest.LicenseRestController.addLicense
+
+GET /licenses   controllers.rest.LicenseRestController.allLicenses
+GET /licenses/:id                 controllers.rest.LicenseRestController.getLicense(id: Int)
+
+POST /licenses/:licenseId/admins               controllers.rest.LicenseRestController.addAdmin(licenseId: Int)
+GET /licenses/:licenseId/admins        controllers.rest.LicenseRestController.adminsForLicense(licenseId: Int)
+#PUT /licenses
+#DELETE /license

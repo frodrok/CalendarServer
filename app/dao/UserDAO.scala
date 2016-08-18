@@ -7,7 +7,6 @@ import play.api.Logger
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import play.db.NamedDatabase
 import slick.driver.JdbcProfile
-import slick.driver.MySQLDriver.api._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
@@ -22,7 +21,7 @@ class UserDAO @Inject()(@NamedDatabase("msql") val dbConfigProvider: DatabaseCon
   private val Groups = TableQuery[GroupsTable]
   private val Events = TableQuery[EventsTable]
 
-  def setup() {
+  def setup(): Unit = {
     db.run(DBIO.seq(
       Groups.schema.create
     )).onFailure{ case ex => Logger.debug(s"error in dbSetup groups: $ex.getMessage") }
@@ -57,19 +56,10 @@ class UserDAO @Inject()(@NamedDatabase("msql") val dbConfigProvider: DatabaseCon
     }
   }
 
-  def add(user: User): Future[Try[Long]] = {
+  def add(user: User): Future[Long] = {
     db.run(
-      ((Users returning Users.map(_.id)) += user).asTry
-    )/* .map {
-      result => {
-        result match {
-          case Success(res) => {Logger.debug("Added user " + user.username)
-            0L
-          }
-          case Failure(e: Exception) => {Logger.error(e.getMessage)
-          0L}
-        }
-      } */
+      ((Users returning Users.map(_.id)) += user)
+    )
   }
 
   def exists(id : Long, username : String): Future[Boolean] = {
