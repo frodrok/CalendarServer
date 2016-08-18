@@ -41,7 +41,7 @@ class LicenseDAO @Inject()(@NamedDatabase("msql") val dbConfigProvider: Database
   }
 
   def getAdminsForLicense(licenseId: Int): Future[Seq[User]] = {
-    val adminQuery = Users.filter(_.licenseId === licenseId).result
+    val adminQuery = Users.filter(u => u.licenseId === licenseId && u.admin === true).result
     db.run(adminQuery)
   }
 

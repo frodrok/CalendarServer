@@ -49,7 +49,7 @@ class AccessControll @Inject()(
     nextFilter(requestHeader).map { result =>
       result.withHeaders(
         "Access-Control-Allow-Origin" -> "*",
-        "Access-Control-Allow-Methods" -> "GET, POST, OPTIONS, DELETE",
+        "Access-Control-Allow-Methods" -> "GET, POST, OPTIONS, DELETE, PUT",
         "Access-Control-Allow-Headers" -> "Accept, Origin, Content-type, X-Json, X-Prototype-Version, X-Requested-With",
         "Access-Control-Allow-Credentials" -> "true",
         "Access-Control-Max-Age" -> (60 * 60 * 24).toString

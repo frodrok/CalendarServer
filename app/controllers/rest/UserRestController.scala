@@ -166,7 +166,13 @@ class UserRestController @Inject()(userDao: UserDAO) extends Controller {
         Future(BadRequest(Json.obj("status" -> "KO", "message" -> JsError.toJson(errors))))
       },
       user => {
-        val userToDb = User(user.id.get, user.username, user.password, user.admin, user.groupId, user.superAdmin, user.licenseId)
+
+        val superAdmin: Option[Boolean] = user.superAdmin match {
+          case None => Some(false)
+          case Some(value) => Some(value)
+        }
+
+        val userToDb = User(user.id.get, user.username, user.password, user.admin, user.groupId, superAdmin, user.licenseId)
 
         userDao.updateUser(userToDb).map {
           result => result match {
