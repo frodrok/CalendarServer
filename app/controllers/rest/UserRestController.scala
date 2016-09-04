@@ -15,7 +15,6 @@ import play.api.mvc.{Action, BodyParsers, Controller}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.util.{Failure, Success}
 
 class UserRestController @Inject()(userDao: UserDAO) extends Controller {
 
@@ -56,7 +55,7 @@ class UserRestController @Inject()(userDao: UserDAO) extends Controller {
             case Some(jsonUser) => Ok(Json.toJson(jsonUser))
             case None => NotFound
           }
-        }
+    }
   }
 
 

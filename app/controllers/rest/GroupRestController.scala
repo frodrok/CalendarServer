@@ -1,19 +1,17 @@
 package controllers.rest
 
 import javax.inject.Inject
-import scala.concurrent.ExecutionContext.Implicits.global
 
 import com.mysql.jdbc.exceptions.jdbc4.{MySQLDataException, MySQLIntegrityConstraintViolationException}
 import controllers.rest.restmodel.JsonGroup
 import dao.GroupDAO
-import model.Group
 import play.api.Logger
+import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import play.api.mvc.{Action, BodyParsers, Controller, Result}
-import play.api.libs.functional.syntax._
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.util.{Failure, Success}
 
 class GroupRestController @Inject()(groupDao: GroupDAO) extends Controller {
 
@@ -112,6 +110,7 @@ class GroupRestController @Inject()(groupDao: GroupDAO) extends Controller {
       jsongroup => {
 
         val dbGroup = jsongroup.toDbGroup
+
         groupDao.updateGroup(dbGroup).map {
           case Some(number) => Ok
           case None => {

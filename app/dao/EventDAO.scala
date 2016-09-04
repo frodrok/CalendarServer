@@ -13,7 +13,6 @@ import scala.concurrent.Future
 
 
 class EventDAO @Inject()(@NamedDatabase("msql") val dbConfigProvider: DatabaseConfigProvider, userDAO: UserDAO) extends HasDatabaseConfigProvider[JdbcProfile] {
-//class EventDAO @Inject()(val dbConfigProvider: DatabaseConfigProvider, userDAO: UserDAO) extends HasDatabaseConfigProvider[JdbcProfile] {
 
   import driver.api._
 
@@ -55,9 +54,6 @@ class EventDAO @Inject()(@NamedDatabase("msql") val dbConfigProvider: DatabaseCo
   }
 
   def getEventsForGroup(groupId: Int): Future[Seq[Event]] = {
-    /* val q = for {
-      e <- Events if e.groupId === groupId
-    } yield (e) unused, could be used */
 
     val extraquery = Events.filter(_.groupId === groupId).result
 
@@ -76,10 +72,6 @@ class EventDAO @Inject()(@NamedDatabase("msql") val dbConfigProvider: DatabaseCo
 
 
   def deleteEvent(eventId: Int): Future[Option[Int]] = {
-    /* val q = Events.filter(_.id === eventId)
-    val action = q.delete
-    db.run(action)*/
-
     db.run(
       Events.filter(_.id === eventId).delete.map {
         case 0 => None

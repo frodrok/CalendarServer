@@ -101,8 +101,6 @@ class EventRestController @Inject()(eventDAO: EventDAO) extends Controller with 
   def serializeListOptionsEight(userId: Int) = getOptions()
   def serializeListOptionsNine() = getOptions()
 
-
-
   def getOptions() = Action {
     Ok("").withHeaders(
     "Access-Control-Allow-Origin" -> "*",
@@ -119,25 +117,6 @@ class EventRestController @Inject()(eventDAO: EventDAO) extends Controller with 
     BadRequest(Json.obj("status" -> "KO", "message" -> (message)))
   }
 
-  /* implicit val dbEventWrites = new Writes[Event] {
-    def writes(event: Event) = {
-
-      val to: Long = event.to match {
-        case None => 0L
-        case Some(value) => value
-      }
-
-      Json.obj(
-        "id" -> event.id,
-        "title" -> event.eventName,
-        "from" -> event.from,
-        "to" -> to,
-        "groupId" -> event.groupId,
-        "background" -> event.background
-      )
-    }
-  } */
-
   def allEvents() = Action.async {
     eventDAO.allEvents.map {
       events => {
@@ -152,7 +131,6 @@ class EventRestController @Inject()(eventDAO: EventDAO) extends Controller with 
     eventDAO.getEventsForUser(userId).map {
       events => Ok(Json.toJson(events)).withHeaders(effinHeaders)
     } recover {
-//      case e: UserHasNoGroupException => toFailureJson("User has no group")
       case e: UserHasNoGroupException => NotFound("User has no group")
       case e: UserNotFoundException => NotFound
       case e: Exception => toFailureJson(e.getMessage)

@@ -3,15 +3,13 @@ package dao
 import javax.inject.Inject
 
 import com.mysql.jdbc.exceptions.jdbc4.MySQLDataException
-import model.{Event, Group, GroupsTable, UsersTable}
+import model.{Group, GroupsTable, UsersTable}
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import play.db.NamedDatabase
 import slick.driver.JdbcProfile
-import slick.driver.MySQLDriver.api._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.util.{Failure, Success, Try}
 
 class GroupDAO @Inject()(@NamedDatabase("msql") val dbConfigProvider: DatabaseConfigProvider) extends HasDatabaseConfigProvider[JdbcProfile] {
 
@@ -34,7 +32,6 @@ class GroupDAO @Inject()(@NamedDatabase("msql") val dbConfigProvider: DatabaseCo
     }
   }
 
-  /* get all, get one */
   def allGroups: Future[Seq[Group]] = {
     db.run(Groups.result)
   }

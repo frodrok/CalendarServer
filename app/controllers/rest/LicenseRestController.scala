@@ -14,14 +14,7 @@ import play.api.mvc.{Action, BodyParsers, Controller}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-/**
-  * Created by frodrok on 2016-08-17.
-  */
 class LicenseRestController @Inject()(licenseDAO: LicenseDAO) extends Controller with LicenseJson with UserJson {
-
-  /* POST /licenses  controllers.rest.LicenseRestController.addLicense
-  GET /licenses   controllers.rest.LicenseRestController.allLicenses
-  GET /licenses/:id                 controllers.rest.LicenseRestController.getLicense(id: Int) */
 
   /* json readers and writers */
   implicit val reads: Reads[License] = getReads

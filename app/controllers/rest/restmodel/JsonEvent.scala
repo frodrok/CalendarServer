@@ -2,12 +2,7 @@ package controllers.rest.restmodel
 
 import org.joda.time.DateTime
 
-/**
-  * Created by frodrok on 04/08/16.
-  */
 case class JsonEvent(id: Option[Int], eventName: String, from: String, to: Option[String], groupId: Int) {
-  /* val id = id
-  val eventName = eventName */
 
   val fromDate: DateTime = new DateTime(from)
   val toDateOption: Option[DateTime] = to match {
@@ -18,8 +13,6 @@ case class JsonEvent(id: Option[Int], eventName: String, from: String, to: Optio
       }
     case None => None
   }
-
-  //val groupId = groupId
 
   def apply(id: Option[Int], eventName: String, from: String, to: Option[String], groupId: Int): JsonEvent = JsonEvent(id, eventName, from, to, groupId)
 

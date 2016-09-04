@@ -9,9 +9,7 @@ import play.db.NamedDatabase
 import slick.driver.JdbcProfile
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration._
-import scala.concurrent.{Await, Future}
-import scala.util.Try
+import scala.concurrent.Future
 
 class UserDAO @Inject()(@NamedDatabase("msql") val dbConfigProvider: DatabaseConfigProvider) extends HasDatabaseConfigProvider[JdbcProfile] {
 
@@ -66,29 +64,6 @@ class UserDAO @Inject()(@NamedDatabase("msql") val dbConfigProvider: DatabaseCon
     db.run(Users.filter(i => i.id === id || i.username === username).exists.result)
   }
 
-  def update(user: User): Future[Option[Long]] = {
-    val wat = Await.result(exists(user.id, user.username), 3.seconds)
-
-    if (wat) {
-      val q1 = Users.filter(_.id === user.id).update(user).map(int => Some(int.toLong))
-      db.run(q1)
-    } else {
-      throw UserNotFoundException("")
-    }
-
-    /* i do not know why this does not work
-    exists(user.id, user.username).map {
-      case false => {
-        throw new UserNotFoundException("")
-      }
-      case true => {
-        val q1 = Users.filter(_.id === user.id).update(user).map(_.toLong).asTry
-        db.run(q1)
-      }
-    } */
-  }
-
-
   def allUsers: Future[Seq[User]] = db.run(Users.result)
 
   def getUserByGroup(retrievedGroupName: String): Future[Seq[User]] = {
@@ -117,7 +92,5 @@ class UserDAO @Inject()(@NamedDatabase("msql") val dbConfigProvider: DatabaseCon
       seq => seq.headOption
     }
   }
-
-
 
 }
